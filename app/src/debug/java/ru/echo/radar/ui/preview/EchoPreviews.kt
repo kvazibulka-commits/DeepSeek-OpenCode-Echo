@@ -33,6 +33,7 @@ import ru.echo.radar.ui.components.EchoSegmentedControl
 import ru.echo.radar.ui.components.EchoSignalRow
 import ru.echo.radar.ui.components.EchoStatusLine
 import ru.echo.radar.ui.components.EchoVinylHero
+import ru.echo.radar.ui.components.pluralRu
 import ru.echo.radar.ui.theme.EchoColors
 import ru.echo.radar.ui.theme.EchoTheme
 
@@ -162,8 +163,14 @@ private fun AirPreview() {
                 subtitle = "Музыка, которая живёт вокруг",
                 onOpenSettings = {},
             )
-            EchoMetric(value = "4", caption = "голоса рядом · резонанс до 87%")
-            EchoStatusLine(connection = EchoConnection.Online, totalObjects = 5)
+            EchoMetric(
+                value = demoSignals.size.toString(),
+                caption = "${demoSignals.size} ${pluralRu(demoSignals.size, "голос", "голоса", "голосов")} рядом · резонанс до 87%",
+            )
+            EchoStatusLine(
+                connection = EchoConnection.Online,
+                totalObjects = demoSignals.size + demoCapsules.size,
+            )
             Spacer(modifier = Modifier.height(10.dp))
             EchoSegmentedControl(
                 options = listOf("СОНАР", "ТАЙНИКИ"),
@@ -213,7 +220,10 @@ private fun DeckPreview() {
                 subtitle = "Сейчас на игле",
                 onOpenSettings = {},
             )
-            EchoStatusLine(connection = EchoConnection.Online, totalObjects = 5)
+            EchoStatusLine(
+                connection = EchoConnection.Online,
+                totalObjects = demoSignals.size + demoCapsules.size,
+            )
             Spacer(modifier = Modifier.height(8.dp))
             EchoVinylHero(
                 labelColorHex = 0xFF38BDF8,

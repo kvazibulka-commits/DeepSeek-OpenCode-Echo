@@ -29,12 +29,13 @@ start docs\design\variants-0.2.html
 Или отрендерить Compose-превью:
 
 ```bat
+set ANDROID_USER_HOME=C:\Users\Public\android-home
 android preview list :app
-android preview render :app --fqn ru.echo.radar.ui.preview.AirPreview --output docs\design\previews
+android preview render :app --fqn ru.echo.radar.ui.preview.EchoPreviewsKt.AirPreview --output docs\design\previews
 ```
 
-Ограничение: если `%USERPROFILE%` содержит кириллицу, Android CLI может не найти
-кэш `~/.android/cache/preview`. В этом случае рендерять из ASCII-профиля или в CI.
+`ANDROID_USER_HOME` уводит кэш превью из профиля с кириллицей в ASCII-путь — так
+рендер работает и на этой машине, и в CI.
 
 ## Правила
 

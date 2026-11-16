@@ -103,5 +103,5 @@ adb install -r echo-radar-0.1.0-debug.apk
 (например, `C:\Users\Public\echo-build`) или доверять CI.
 
 `android preview render :app` рендерит Compose-экраны без устройства. Если кириллица
-в `%USERPROFILE%`, CLI может потерять путь к кэшу `~/.android/cache/preview` —
-тогда запускайте из ASCII-профиля или полагайтесь на CI/эмулятор.
+в `%USERPROFILE%`, задайте `ANDROID_USER_HOME=C:\Users\Public\android-home` — кэш
+превью уйдёт в ASCII-путь, и CLI перестанет терять файлы.

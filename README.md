@@ -34,6 +34,14 @@
 - `docs/TOOLING.md` — скилы и MCP-серверы для Android-разработки;
 - `docs/CHRONICLE.md` — что и когда менялось.
 
+## Скриншоты 0.2
+
+| ЭФИР | ДЕКА |
+|---|---|
+| ![ЭФИР](docs/design/previews/air-0.2.png) | ![ДЕКА](docs/design/previews/deck-0.2.png) |
+
+Это реальные кадры Compose-превью, а не веб-макеты: `android preview render`.
+
 ## Как собрать
 
 Локально нужны JDK 17 и Android SDK 34.

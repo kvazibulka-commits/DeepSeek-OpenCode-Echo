@@ -32,14 +32,13 @@
 - `assembleDebug` + `testDebugUnitTest` — успешно, 19 тестов (добавлен PluralTest).
 - APK `echo-radar-0.2.0-debug.apk`, 10.8 МБ, versionCode 2, launchable activity и
   `EchoWidgetProvider` с `APPWIDGET_UPDATE` присутствуют в манифесте.
-- `android preview render :app` — не удалось в этой среде: CLI теряет путь к кэшу
-  `C:\Users\Владимир\.android\cache\preview`; превью-функции в проекте готовы,
-  рендер пойдёт из ASCII-профиля или CI.
+- `android preview render :app` — успешно: `docs/design/previews/{air,deck,nav}-0.2.png`
+  (нужен `ANDROID_USER_HOME` в ASCII-пути).
 
 **Проблемы**
 
-- `android preview` принимает Gradle-путь `:app`, а не путь к папке; первый резолв
-  занимает до минуты, стабильнее запускать из ASCII-пути.
+- `android preview` принимает Gradle-путь `:app`, а не путь к папке; при кириллице
+  в профиле нужен `ANDROID_USER_HOME=C:\Users\Public\android-home`.
 
 **Следующий шаг**
 
