@@ -14,4 +14,5 @@ local.properties
 *.db
 *.log
 build-log.txt
+.playwright-mcp/
 /toolchain

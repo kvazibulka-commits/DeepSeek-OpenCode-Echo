@@ -19,64 +19,91 @@
 
 ## MCP-серверы
 
-### 1. GitHub MCP — репозиторий и CI без ручных curl
+OpenCode V2 хранит серверы под `mcp.servers`. Поля `enabled` нет: сервер подключается
+сразу, отключение — `"disabled": true`. Конфиг перечитывается без перезапуска.
 
-Позволяет агенту смотреть issues, PR, статусы Actions и артефакты.
+### Playwright MCP — включён
+
+Управляет установленным Chrome: открывает HTML-макеты, снимает скриншоты, кликает
+по прототипу, собирает console и network. Проверено на `docs/design/variants-0.2.html`.
+
+Что установлено (Node в системе не было):
+
+- Node.js LTS 26.13.1 → `C:\Users\Public\node-portable\node-v26.13.1-win-x64`
+- `@playwright/mcp` 0.0.85 → `C:\Users\Public\playwright-mcp`
 
 ```json
 {
   "mcp": {
-    "github": {
-      "type": "local",
-      "command": ["npx", "-y", "@modelcontextprotocol/server-github"],
-      "environment": { "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_TOKEN}" },
-      "enabled": true
+    "servers": {
+      "playwright": {
+        "type": "local",
+        "command": [
+          "C:\\Users\\Public\\node-portable\\node-v26.13.1-win-x64\\node.exe",
+          "C:\\Users\\Public\\playwright-mcp\\node_modules\\@playwright\\mcp\\cli.js",
+          "--browser",
+          "chrome",
+          "--headless",
+          "--isolated"
+        ],
+        "timeout": { "startup": 60000 }
+      }
     }
   }
 }
 ```
 
-Токен: fine-grained, права **Contents: Read and write**, **Workflows: Read and write**,
-**Actions: Read**, **Issues: Read and write**. Хранить только в переменной окружения.
+`cwd` не задан — сервер работает из корня текущего проекта, поэтому видит
+`docs/design`. Chrome берётся установленный, браузеры Playwright не скачиваются.
 
-### 2. Playwright MCP — макеты и визуальные регрессии
+### GitHub MCP — репозиторий и CI
 
-Рендер `docs/design/*.html` в PNG, клики по прототипу, сравнение скриншотов.
+Issues, PR, статусы Actions и артефакты без ручных curl. Нужен Node и PAT:
+fine-grained, права **Contents: Read and write**, **Workflows: Read and write**,
+**Actions: Read**, **Issues: Read and write**. Токен — только в переменной окружения.
 
 ```json
 {
   "mcp": {
-    "playwright": {
-      "type": "local",
-      "command": ["npx", "-y", "@playwright/mcp@latest"],
-      "enabled": true
+    "servers": {
+      "github": {
+        "type": "local",
+        "command": [
+          "C:\\Users\\Public\\node-portable\\node-v26.13.1-win-x64\\node.exe",
+          "C:\\Users\\Public\\playwright-mcp\\node_modules\\@modelcontextprotocol\\server-github\\dist\\index.js"
+        ],
+        "environment": { "GITHUB_PERSONAL_ACCESS_TOKEN": "{env:GITHUB_TOKEN}" }
+      }
     }
   }
 }
 ```
 
-### 3. Context7 MCP — свежая документация AndroidX/Compose
+Пакет ставится в тот же prefix: `npm install --prefix C:\Users\Public\playwright-mcp @modelcontextprotocol/server-github`.
 
-Помогает не угадывать API при обновлении библиотек.
+### Context7 MCP — свежая документация AndroidX/Compose
+
+Удобнее remote-сервер, без ключа и установки:
 
 ```json
 {
   "mcp": {
-    "context7": {
-      "type": "local",
-      "command": ["npx", "-y", "@upstash/context7-mcp@latest"],
-      "enabled": true
+    "servers": {
+      "context7": {
+        "type": "remote",
+        "url": "https://mcp.context7.com/mcp"
+      }
     }
   }
 }
 ```
 
-### 4. Mobile MCP — эмулятор и устройство
+### Mobile MCP — эмулятор и устройство
 
 Тапы, скриншоты, проверки сценариев на Android. Дополняет `android-cli`.
 Требует запущенного эмулятора или подключённого телефона.
 
-### 5. Figma MCP — если макеты уйдут в Figma
+### Figma MCP — если макеты уйдут в Figma
 
 Dev Mode MCP отдаёт токены и структуру компонентов; полезен, когда дизайн
 перестанет жить в HTML.
@@ -84,7 +111,7 @@ Dev Mode MCP отдаёт токены и структуру компонент�
 ## Порядок работы над экраном
 
 1. `echo-product-concept` — смысл и текст.
-2. `echo-visual-design` — 3 HTML-варианта в `docs/design/`, скриншот через Playwright.
+2. `echo-visual-design` — 3 HTML-варианта в `docs/design/`, скриншот через Playwright MCP.
 3. Выбор варианта пользователем.
 4. `jetpack-compose` + `echo-engineering` — перенос в код.
 5. `android-cli` — сборка, установка, скриншот с устройства.
@@ -96,7 +123,7 @@ Dev Mode MCP отдаёт токены и структуру компонент�
 ```bat
 gradlew.bat assembleDebug
 gradlew.bat testDebugUnitTest
-adb install -r echo-radar-0.1.0-debug.apk
+adb install -r echo-radar-0.2.0-debug.apk
 ```
 
 Если путь проекта содержит кириллицу, unit-тесты локально запускать из ASCII-пути
