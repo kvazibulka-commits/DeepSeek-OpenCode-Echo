@@ -228,6 +228,7 @@
   })();
   let token = localStorage.getItem("echo_token") || "";
   let lastState = null;
+  let lastReactionId = null;
 
   const $ = (id) => document.getElementById(id);
   const esc = (value) => String(value ?? "").replace(/[&<>"']/g, (ch) => ({
@@ -301,7 +302,7 @@
     lastState = state;
     const signals = state.signals || [];
     const capsules = state.capsules || [];
-    const reactions = (state.reactionsHistory || []).slice().reverse();
+    const reactions = (state.allReactions || state.reactionsHistory || []).slice().reverse();
 
     $("kpiSignals").textContent = signals.length;
     $("kpiCapsules").textContent = capsules.length;
@@ -324,6 +325,12 @@
     $("reactions").innerHTML = reactions.length
       ? reactions.map(renderReaction).join("")
       : `<div class="empty">Отклики появятся, когда кто-то ответит на волну.</div>`;
+
+    const newest = reactions[0];
+    if (newest && lastReactionId !== null && newest.id > lastReactionId) {
+      toast(`Отклик из эфира: ${newest.message}`);
+    }
+    if (newest) lastReactionId = newest.id;
 
     const traces = state.eveningTraces || [];
     $("history").innerHTML = traces.length

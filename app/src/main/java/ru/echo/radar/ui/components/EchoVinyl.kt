@@ -9,8 +9,10 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -81,32 +83,32 @@ fun EchoVinyl(
                 )
             }
 
-            if (coverBitmap != null) {
+            if (coverBitmap != null || coverUrl != null) {
                 Box(
                     modifier = Modifier
-                        .fillMaxSize(0.34f)
-                        .clip(CircleShape)
-                        .align(Alignment.Center),
+                        .fillMaxSize()
+                        .clip(CircleShape),
                 ) {
-                    Image(
-                        bitmap = coverBitmap.asImageBitmap(),
-                        contentDescription = null,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize(),
-                    )
-                }
-            } else if (coverUrl != null) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize(0.34f)
-                        .clip(CircleShape)
-                        .align(Alignment.Center),
-                ) {
-                    AsyncImage(
-                        model = coverUrl,
-                        contentDescription = null,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize(),
+                    if (coverBitmap != null) {
+                        Image(
+                            bitmap = coverBitmap.asImageBitmap(),
+                            contentDescription = null,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize(),
+                        )
+                    } else {
+                        AsyncImage(
+                            model = coverUrl,
+                            contentDescription = null,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize(),
+                        )
+                    }
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.Center)
+                            .size(10.dp)
+                            .background(EchoColors.Background, CircleShape),
                     )
                 }
             }

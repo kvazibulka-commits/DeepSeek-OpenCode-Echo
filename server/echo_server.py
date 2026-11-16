@@ -594,6 +594,18 @@ def build_state(device_id: str) -> dict:
         if reaction.get("targetId") in (device_id, "") or reaction.get("senderId") == device_id
     ]
 
+    all_reactions = [
+        {
+            "id": reaction["id"],
+            "targetId": reaction.get("targetId", ""),
+            "senderId": reaction.get("senderId", ""),
+            "symbol": reaction.get("symbol", "✦"),
+            "message": reaction.get("message", "Спасибо за созвучие"),
+            "time": reaction["time"],
+        }
+        for reaction in snapshot[-25:]
+    ]
+
     eligible = [s for s in signals if not s["isGhost"] and s["compatibilityPercent"] >= 75]
     lagrange = None
     if len(eligible) >= 3:
@@ -657,6 +669,7 @@ def build_state(device_id: str) -> dict:
         "cityZones": zones,
         "incomingBanner": banner,
         "reactionsHistory": history_reactions[-25:],
+        "allReactions": all_reactions,
         "myReactions": my_reactions,
         "myRefinedMood": my_mood,
         "myCuratedPersona": my_persona,

@@ -16,12 +16,23 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -49,6 +60,7 @@ fun EchoSignalSheet(
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val accent = Color(signal.colorHex)
+    var menuOpen by remember { mutableStateOf(false) }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -64,6 +76,55 @@ fun EchoSignalSheet(
                 .padding(horizontal = 18.dp)
                 .padding(bottom = 26.dp),
         ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = "ПАСПОРТ СИГНАЛА",
+                    style = MaterialTheme.typography.labelSmall.copy(letterSpacing = 1.4.sp),
+                    color = EchoColors.TextDim,
+                )
+                Spacer(modifier = Modifier.weight(1f))
+                IconButton(onClick = onToggleSave) {
+                    Icon(
+                        imageVector = Icons.Filled.Star,
+                        contentDescription = if (isSaved) "Убрать из сохранённого" else "Сохранить в отзвуки",
+                        tint = if (isSaved) EchoColors.Gold else EchoColors.TextDim,
+                    )
+                }
+                Box {
+                    IconButton(onClick = { menuOpen = true }) {
+                        Icon(
+                            imageVector = Icons.Filled.MoreVert,
+                            contentDescription = "Другие действия",
+                            tint = EchoColors.TextDim,
+                        )
+                    }
+                    DropdownMenu(
+                        expanded = menuOpen,
+                        onDismissRequest = { menuOpen = false },
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("Отклик ✦") },
+                            onClick = {
+                                menuOpen = false
+                                onReact()
+                            },
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Тёплое пятно") },
+                            onClick = {
+                                menuOpen = false
+                                onWarmth()
+                            },
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(4.dp))
+
             if (signal.coverUrl != null) {
                 Box(
                     modifier = Modifier
@@ -200,35 +261,6 @@ fun EchoSignalSheet(
                     primary = false,
                 )
             }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                EchoPillButton(
-                    label = "ОТКЛИК ✦",
-                    onClick = onReact,
-                    modifier = Modifier.weight(1f),
-                    primary = false,
-                )
-                EchoPillButton(
-                    label = "ТЕПЛО",
-                    onClick = onWarmth,
-                    modifier = Modifier.weight(1f),
-                    primary = false,
-                )
-            }
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            EchoPillButton(
-                label = if (isSaved) "УБРАТЬ ИЗ СОХРАНЁННОГО" else "СОХРАНИТЬ В ОТЗВУКИ",
-                onClick = onToggleSave,
-                modifier = Modifier.fillMaxWidth(),
-                primary = !isSaved,
-            )
         }
     }
 }
