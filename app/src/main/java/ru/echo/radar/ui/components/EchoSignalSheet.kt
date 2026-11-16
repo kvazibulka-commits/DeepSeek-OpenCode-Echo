@@ -1,0 +1,143 @@
+package ru.echo.radar.ui.components
+
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import ru.echo.radar.domain.model.EchoSignal
+import ru.echo.radar.ui.theme.EchoColors
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun EchoSignalSheet(
+    signal: EchoSignal,
+    onDismiss: () -> Unit,
+    onWave: () -> Unit,
+    onNeedle: () -> Unit,
+    onReact: () -> Unit,
+    onWarmth: () -> Unit,
+) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val accent = Color(signal.colorHex)
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        containerColor = EchoColors.SurfaceElevated,
+        contentColor = EchoColors.TextPrimary,
+        dragHandle = { EchoSheetHandle() },
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 18.dp)
+                .padding(bottom = 26.dp),
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                EchoAvatar(petals = signal.avatarPetals, colorHex = signal.colorHex, size = 52.dp)
+                Spacer(modifier = Modifier.width(12.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = signal.personaTitle,
+                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                        color = accent,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Spacer(modifier = Modifier.height(3.dp))
+                    Text(
+                        text = "${signal.artist} — ${signal.title}",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = EchoColors.TextPrimary,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Spacer(modifier = Modifier.height(3.dp))
+                    Text(
+                        text = "${signal.sourceName} · ${formatDistance(signal.distanceMeters)}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = EchoColors.TextDim,
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                EchoChip("Резонанс ${signal.compatibility}%", accent)
+                EchoChip("${signal.bpm} BPM")
+                EchoChip(signal.camelotKey)
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+            EchoSheetTitle("ЗВУКОВОЙ ПАСПОРТ")
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(
+                text = "${signal.zoneName} · ${signal.moodLabel} · ${signal.genre}",
+                style = MaterialTheme.typography.bodyMedium,
+                color = EchoColors.TextSecondary,
+            )
+
+            if (signal.resonanceStory.isNotBlank()) {
+                Spacer(modifier = Modifier.height(14.dp))
+                EchoSheetTitle("КУЛЬТУРНЫЙ МОСТ")
+                Spacer(modifier = Modifier.height(5.dp))
+                Text(
+                    text = signal.resonanceStory,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = EchoColors.TextSecondary,
+                )
+            }
+
+            if (signal.personaObservation.isNotBlank()) {
+                Spacer(modifier = Modifier.height(12.dp))
+                EchoQuote(signal.personaObservation)
+            }
+
+            if (signal.encountersCount > 1 || signal.isGhost) {
+                Spacer(modifier = Modifier.height(12.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    if (signal.encountersCount > 1) {
+                        EchoChip("Встреч: ${signal.encountersCount}", EchoColors.Gold)
+                    }
+                    if (signal.isGhost) {
+                        EchoChip("Призрачный след · ${signal.ageMinutes} мин", EchoColors.Amber)
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            EchoActionRow(
+                actions = listOf(
+                    "Волна" to onWave,
+                    "Игла" to onNeedle,
+                    "Отклик" to onReact,
+                    "Тепло" to onWarmth,
+                ),
+            )
+        }
+    }
+}
