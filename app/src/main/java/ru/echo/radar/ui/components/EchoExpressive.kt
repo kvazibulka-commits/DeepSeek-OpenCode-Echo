@@ -437,14 +437,6 @@ fun EchoSignalRow(
             )
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = signal.personaTitle.uppercase(),
-                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.5.sp, letterSpacing = 0.8.sp),
-                    color = accent,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
                     text = "${signal.artist} — ${signal.title}",
                     style = MaterialTheme.typography.titleMedium.copy(
                         fontFamily = FontFamily.Serif,
@@ -455,18 +447,31 @@ fun EchoSignalRow(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
-                Spacer(modifier = Modifier.height(3.dp))
+                val facts = buildString {
+                    if (signal.album.isNotBlank()) append(signal.album)
+                    if (signal.hasTrustedGenre) {
+                        if (isNotEmpty()) append(" · ")
+                        append(signal.genreLabel.ifBlank { signal.genre })
+                    }
+                }
+                if (facts.isNotBlank()) {
+                    Spacer(modifier = Modifier.height(3.dp))
+                    Text(
+                        text = facts,
+                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.5.sp),
+                        color = EchoColors.TextSecondary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+                Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = buildString {
-                        append(signal.bpm)
-                        append(" BPM · ")
-                        append(signal.camelotKey)
-                        append(" · ")
-                        append(formatDistance(signal.distanceMeters))
+                        append(signal.personaTitle.uppercase())
                         if (signal.isGhost) append(" · ПРИЗРАК")
                     },
-                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp, letterSpacing = 0.4.sp),
-                    color = if (signal.isGhost) EchoColors.Amber else EchoColors.TextDim,
+                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp, letterSpacing = 0.8.sp),
+                    color = if (signal.isGhost) EchoColors.Amber else accent.copy(alpha = 0.8f),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )

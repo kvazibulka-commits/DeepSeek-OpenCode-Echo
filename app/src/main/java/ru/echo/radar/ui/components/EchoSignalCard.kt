@@ -58,9 +58,9 @@ fun EchoSignalCard(signal: EchoSignal, onClick: () -> Unit, modifier: Modifier =
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        text = signal.personaTitle,
-                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
-                        color = accent,
+                        text = "${signal.artist} — ${signal.title}",
+                        style = MaterialTheme.typography.titleMedium.copy(fontSize = 14.sp),
+                        color = EchoColors.TextPrimary,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f),
@@ -71,15 +71,16 @@ fun EchoSignalCard(signal: EchoSignal, onClick: () -> Unit, modifier: Modifier =
                     }
                 }
 
-                Spacer(modifier = Modifier.height(5.dp))
-
-                Text(
-                    text = "${signal.artist} — ${signal.title}",
-                    style = MaterialTheme.typography.titleMedium.copy(fontSize = 14.sp),
-                    color = EchoColors.TextPrimary,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
+                if (signal.album.isNotBlank()) {
+                    Spacer(modifier = Modifier.height(3.dp))
+                    Text(
+                        text = signal.album,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = EchoColors.TextSecondary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
 
                 Spacer(modifier = Modifier.height(8.dp))
 
@@ -89,10 +90,20 @@ fun EchoSignalCard(signal: EchoSignal, onClick: () -> Unit, modifier: Modifier =
                     modifier = Modifier.horizontalScroll(rememberScrollState()),
                 ) {
                     EchoChip("${signal.compatibility}%", accent)
-                    EchoChip("${signal.bpm} BPM")
-                    EchoChip(signal.camelotKey)
-                    EchoChip(signal.zoneName)
+                    if (signal.hasTrustedGenre) {
+                        EchoChip(signal.genreLabel.ifBlank { signal.genre })
+                    }
                 }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Text(
+                    text = signal.personaTitle,
+                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.5.sp),
+                    color = accent.copy(alpha = 0.85f),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
             }
 
             Column(

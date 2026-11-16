@@ -17,12 +17,14 @@
 
 from __future__ import annotations
 
+import re
+
 try:
     from .genres import genre_label
-    from .resonance import Acoustics, seed_int
+    from .resonance import Acoustics, normalize, seed_int
 except ImportError:
     from genres import genre_label
-    from resonance import Acoustics, seed_int
+    from resonance import Acoustics, normalize, seed_int
 
 # ── Мотивы ───────────────────────────────────────────────────────────────────
 # keywords — устойчивые основы слов (русские и английские).
@@ -39,6 +41,7 @@ MOTIFS: tuple[dict, ...] = (
             "сага", "saga", "берсерк", "berserk", "ярл", "jarl", "тролл", "troll",
             "один", "odin", "валькир", "valkyr", "danheim", "wardruna", "heilung",
             "север", "north", "ярн", "jarn", "дракон", "dragon",
+            "vanir", "ванир", "asgard", "ассгард", "munkn", "nordr", "runaljod",
         ),
         "images": (
             "драккара", "северного ветра", "рунных камней", "фьорда",
@@ -523,8 +526,30 @@ MOTIF_BY_ID = {motif["id"]: motif for motif in MOTIFS}
 
 
 def _words(text: str) -> str:
-    probe = (text or "").lower().replace("ё", "е")
-    return " ".join(probe.split())
+    """Нормализация как в резонансе: диакритика, регистр, пунктуация."""
+    return normalize(text)
+
+
+_CYRILLIC = re.compile(r"[а-яё]")
+_WORD_START_CACHE: dict[str, re.Pattern[str]] = {}
+
+
+def _keyword_hit(needle: str, text: str) -> bool:
+    """Кириллица — основа слова, латиница — начало слова или точный токен.
+
+    Так «bar» не срабатывает на «Hubbard», а «munkn» находит «Munknörr».
+    """
+    if not needle or not text:
+        return False
+    if _CYRILLIC.search(needle):
+        return needle in text
+    if len(needle) <= 3:
+        return needle in text.split()
+    pattern = _WORD_START_CACHE.get(needle)
+    if pattern is None:
+        pattern = re.compile(rf"(?<!\w){re.escape(needle)}")
+        _WORD_START_CACHE[needle] = pattern
+    return pattern.search(text) is not None
 
 
 def motif_score(motif: dict, artist: str, title: str, album: str, genre: str) -> tuple[float, float]:
@@ -536,9 +561,9 @@ def motif_score(motif: dict, artist: str, title: str, album: str, genre: str) ->
     )
     text_score = 0.0
     for keyword in motif["keywords"]:
-        needle = keyword.lower().replace("ё", "е")
+        needle = normalize(keyword)
         for text, weight in fields:
-            if needle and needle in text:
+            if _keyword_hit(needle, text):
                 text_score += weight * (1.0 + min(len(needle), 12) / 12.0)
     genre_bonus = 5.0 if genre and genre in motif["genres"] else 0.0
     return text_score + genre_bonus, text_score

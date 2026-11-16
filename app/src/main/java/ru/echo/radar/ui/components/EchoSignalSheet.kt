@@ -165,14 +165,6 @@ fun EchoSignalSheet(
 
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = signal.personaTitle,
-                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.5.sp),
-                        color = accent,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
                         text = signal.title,
                         style = MaterialTheme.typography.titleMedium.copy(fontSize = 16.sp),
                         color = EchoColors.TextPrimary,
@@ -187,17 +179,29 @@ fun EchoSignalSheet(
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
-                    Spacer(modifier = Modifier.height(6.dp))
+                    if (signal.album.isNotBlank()) {
+                        Spacer(modifier = Modifier.height(5.dp))
+                        Text(
+                            text = signal.album,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = EchoColors.TextSecondary,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                    if (signal.hasTrustedGenre) {
+                        Spacer(modifier = Modifier.height(5.dp))
+                        Text(
+                            text = signal.genreLabel.ifBlank { signal.genre },
+                            style = MaterialTheme.typography.bodySmall,
+                            color = accent,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(7.dp))
                     Text(
-                        text = signal.album.ifBlank { "Альбом не передан" },
-                        style = MaterialTheme.typography.bodySmall,
-                        color = if (signal.album.isBlank()) EchoColors.TextDim else EchoColors.TextSecondary,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    Spacer(modifier = Modifier.height(3.dp))
-                    Text(
-                        text = "${signal.sourceName} · ${formatDistance(signal.distanceMeters)}",
+                        text = signal.sourceName,
                         style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.5.sp),
                         color = EchoColors.TextDim,
                         maxLines = 1,
@@ -219,25 +223,8 @@ fun EchoSignalSheet(
                 )
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
-            EchoSheetTitle("О ТРЕКЕ")
-            Spacer(modifier = Modifier.height(6.dp))
-            Text(
-                text = "${signal.zoneName} · ${signal.genreLabel.ifBlank { signal.genre }}",
-                style = MaterialTheme.typography.bodyMedium,
-                color = EchoColors.TextSecondary,
-            )
-            if (signal.hasTrustedGenre) {
-                Spacer(modifier = Modifier.height(3.dp))
-                Text(
-                    text = signal.genreOriginLabel.ifBlank { "жанр из источника" },
-                    style = MaterialTheme.typography.bodySmall,
-                    color = EchoColors.TextDim,
-                )
-            }
-
             if (signal.resonanceStory.isNotBlank()) {
-                Spacer(modifier = Modifier.height(14.dp))
+                Spacer(modifier = Modifier.height(16.dp))
                 EchoSheetTitle("ПОЧЕМУ СОВПАЛО")
                 Spacer(modifier = Modifier.height(5.dp))
                 Text(
@@ -247,9 +234,23 @@ fun EchoSignalSheet(
                 )
             }
 
+            Spacer(modifier = Modifier.height(18.dp))
+            EchoSheetTitle("ОБРАЗ ТРЕКА")
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(
+                text = signal.personaTitle,
+                style = MaterialTheme.typography.titleMedium.copy(fontSize = 15.sp),
+                color = accent,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
             if (signal.personaObservation.isNotBlank()) {
-                Spacer(modifier = Modifier.height(12.dp))
-                EchoQuote(signal.personaObservation)
+                Spacer(modifier = Modifier.height(5.dp))
+                Text(
+                    text = signal.personaObservation,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = EchoColors.TextSecondary,
+                )
             }
 
             if (signal.encountersCount > 1 || signal.isGhost) {

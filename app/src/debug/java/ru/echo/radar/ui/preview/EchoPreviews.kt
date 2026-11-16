@@ -203,7 +203,7 @@ private fun AirPreview() {
                 beam = ResonanceBeam(
                     angleDegrees = 42f,
                     distanceRatio = 0.63f,
-                    progress = { 0.72f },
+                    timeMillis = { 12_400L },
                 ),
             )
             Spacer(modifier = Modifier.height(10.dp))

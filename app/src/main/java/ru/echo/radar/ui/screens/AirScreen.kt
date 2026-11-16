@@ -1,8 +1,5 @@
 package ru.echo.radar.ui.screens
 
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.horizontalScroll
@@ -27,10 +24,12 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -55,11 +54,8 @@ import ru.echo.radar.ui.components.EchoStatusLine
 import ru.echo.radar.ui.components.ResonanceBeam
 import ru.echo.radar.ui.components.pluralRu
 import ru.echo.radar.ui.theme.EchoColors
-import kotlinx.coroutines.delay
 
 private const val RESONANCE_THRESHOLD = 85
-private const val BEAM_TRAVEL_MS = 2600
-private const val BEAM_REST_MS = 3400L
 private const val DEMO_MATCH_ID = "sig_demo_match"
 
 @Composable
@@ -72,7 +68,7 @@ fun AirScreen(repository: EchoRepository, onOpenSettings: () -> Unit) {
     var selectedSignal by remember { mutableStateOf<EchoSignal?>(null) }
     var showCaches by rememberSaveable { mutableStateOf(true) }
     var zoom by remember { mutableStateOf(1f) }
-    val beamProgress = remember { Animatable(0f) }
+    var stringClock by remember { mutableLongStateOf(0L) }
 
     val topResonance = snapshot.signals.maxOfOrNull { it.compatibility } ?: 0
 
@@ -88,19 +84,10 @@ fun AirScreen(repository: EchoRepository, onOpenSettings: () -> Unit) {
         }
     }
 
-    LaunchedEffect(beamTarget?.id) {
-        if (beamTarget == null) {
-            beamProgress.snapTo(0f)
-            return@LaunchedEffect
-        }
-        // Спокойный вечный цикл: луч плавно идёт к сигналу, гаснет и возвращается.
+    // Струна живёт непрерывно: время кадра читается только в фазе рисования.
+    LaunchedEffect(Unit) {
         while (true) {
-            beamProgress.snapTo(0f)
-            beamProgress.animateTo(
-                targetValue = 1f,
-                animationSpec = tween(durationMillis = BEAM_TRAVEL_MS, easing = LinearEasing),
-            )
-            delay(BEAM_REST_MS)
+            withFrameNanos { frameTime -> stringClock = frameTime }
         }
     }
 
@@ -165,7 +152,7 @@ fun AirScreen(repository: EchoRepository, onOpenSettings: () -> Unit) {
                     ResonanceBeam(
                         angleDegrees = signal.angleDegrees,
                         distanceRatio = signal.distanceRatio,
-                        progress = { beamProgress.value },
+                        timeMillis = { stringClock },
                     )
                 },
             )

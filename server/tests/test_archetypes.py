@@ -43,6 +43,11 @@ class GenreSourceTest(unittest.TestCase):
         self.assertEqual("nordic folk", info.genre)
         self.assertEqual("catalog", info.origin)
 
+    def test_diacritics_fold(self) -> None:
+        info = resolve_genre("Munknörr", "Vanir", "Norðr")
+        self.assertEqual("nordic folk", info.genre)
+        self.assertEqual("catalog", info.origin)
+
     def test_unknown_genre_is_not_invented(self) -> None:
         info = resolve_genre("E-L-R", "Seeds", "Vague")
         self.assertEqual("unknown", info.genre)
@@ -85,6 +90,11 @@ class ArchetypeTest(unittest.TestCase):
     def test_motif_fallback_by_genre(self) -> None:
         motif = pick_motif("Неизвестный", "Без слов", "", "ambient")
         self.assertEqual("dream", motif["id"])
+
+    def test_short_latin_keyword_needs_word_start(self) -> None:
+        # «bar» не должен срабатывать на фамилии Hubbard.
+        motif = pick_motif("Ray Wylie Hubbard", "Choctaw Bingo", "", "folk")
+        self.assertEqual("folk", motif["id"])
 
     def test_colour_is_opaque(self) -> None:
         _, archetype = build("Burial", "Archangel", "Untrue")

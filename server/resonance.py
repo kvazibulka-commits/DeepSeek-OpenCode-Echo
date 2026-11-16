@@ -228,8 +228,23 @@ def seed_int(*parts: str) -> int:
     return int.from_bytes(hashlib.sha256(raw).digest()[:8], "big")
 
 
+_LATIN_FOLD = str.maketrans({
+    "ð": "d",
+    "þ": "th",
+    "ø": "o",
+    "å": "a",
+    "æ": "ae",
+    "œ": "oe",
+    "ß": "ss",
+    "ł": "l",
+    "ı": "i",
+})
+
+
 def normalize(text: str) -> str:
-    value = unicodedata.normalize("NFKC", str(text or "")).casefold()
+    value = unicodedata.normalize("NFKD", str(text or "").casefold())
+    value = "".join(char for char in value if not unicodedata.combining(char))
+    value = value.translate(_LATIN_FOLD)
     value = re.sub(r"\(.*?\)|\[.*?\]", " ", value)
     value = re.sub(r"\b(feat|ft|featuring|при\s+уч|при\s+участии)\b.*$", " ", value)
     value = re.sub(r"[^\w\s]", " ", value, flags=re.UNICODE)

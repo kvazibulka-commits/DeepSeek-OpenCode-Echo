@@ -204,6 +204,9 @@ ARTIST_GENRES: dict[str, str] = {
     "eivør": "nordic folk",
     "nytt land": "nordic folk",
     "runahild": "nordic folk",
+    "munknörr": "nordic folk",
+    "munknorr": "nordic folk",
+    "ray wylie hubbard": "folk",
     "forndom": "dark folk",
     "perturbator": "synthwave",
     "kavinsky": "synthwave",
@@ -270,6 +273,8 @@ TEXT_GENRES: tuple[tuple[str, str], ...] = (
     ("rune", "nordic folk"),
     ("сага", "nordic folk"),
     ("saga", "nordic folk"),
+    ("nordr", "nordic folk"),
+    ("nord", "nordic folk"),
     ("симфони", "classical"),
     ("symphony", "classical"),
     ("соната", "classical"),
@@ -324,9 +329,10 @@ def _artist_genre(artist: str) -> str:
     best = ""
     best_len = 0
     for key, genre in ARTIST_GENRES.items():
-        if key and key in probe and len(key) > best_len:
+        needle = normalize(key)
+        if needle and needle in probe and len(needle) > best_len:
             best = genre
-            best_len = len(key)
+            best_len = len(needle)
     return best
 
 
