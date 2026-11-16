@@ -1,8 +1,23 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
+}
+
+// Локальные тестовые значения (не коммитятся): echo.host и echo.token.
+val echoDefaults = Properties().apply {
+    val file = rootProject.file("echo.defaults.properties")
+    if (file.exists()) {
+        file.inputStream().use { stream -> load(stream) }
+    }
+}
+
+fun defaultValue(name: String): String {
+    val raw = echoDefaults.getProperty(name, "")
+    return "\"" + raw.replace("\\", "\\\\").replace("\"", "\\\"") + "\""
 }
 
 android {
@@ -13,8 +28,11 @@ android {
         applicationId = "ru.echo.radar"
         minSdk = 26
         targetSdk = 34
-        versionCode = 2
-        versionName = "0.2.0"
+        versionCode = 3
+        versionName = "0.3.0"
+
+        buildConfigField("String", "ECHO_DEFAULT_HOST", defaultValue("echo.host"))
+        buildConfigField("String", "ECHO_DEFAULT_TOKEN", defaultValue("echo.token"))
 
         vectorDrawables {
             useSupportLibrary = true
@@ -55,6 +73,7 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 
     packaging {

@@ -3,6 +3,7 @@ package ru.echo.radar.media
 import android.app.Notification
 import android.content.ComponentName
 import android.content.Context
+import android.graphics.Bitmap
 import android.media.MediaMetadata
 import android.media.session.MediaController
 import android.media.session.MediaSession
@@ -67,12 +68,15 @@ class EchoMediaListenerService : NotificationListenerService() {
         val title = extras.getCharSequence(Notification.EXTRA_TITLE)?.toString()
         val text = extras.getCharSequence(Notification.EXTRA_TEXT)?.toString()
         val subText = extras.getCharSequence(Notification.EXTRA_SUB_TEXT)?.toString()
+        @Suppress("DEPRECATION")
+        val largeIcon = notification.extras
+            ?.getParcelable(Notification.EXTRA_LARGE_ICON) as? Bitmap
 
         val parsed = TrackText.parse(text) ?: TrackText.parse(title)
         if (parsed != null) {
-            publish(packageName, parsed.first, parsed.second)
+            publish(packageName, parsed.first, parsed.second, largeIcon)
         } else if (!title.isNullOrBlank() && !text.isNullOrBlank()) {
-            publish(packageName, subText ?: "Неизвестный исполнитель", text)
+            publish(packageName, subText ?: "Неизвестный исполнитель", text, largeIcon)
         }
     }
 
@@ -133,21 +137,29 @@ class EchoMediaListenerService : NotificationListenerService() {
             ?: metadata.getString(MediaMetadata.METADATA_KEY_ALBUM_ARTIST)
             ?: ""
         val title = metadata.getString(MediaMetadata.METADATA_KEY_TITLE) ?: return
-        publish(packageName, artist, title)
+        val cover = metadata.getBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART)
+            ?: metadata.getBitmap(MediaMetadata.METADATA_KEY_ART)
+            ?: metadata.getBitmap(MediaMetadata.METADATA_KEY_DISPLAY_ICON)
+        publish(packageName, artist, title, cover)
     }
 
-    private fun publish(packageName: String, artist: String, title: String) {
+    private fun publish(
+        packageName: String,
+        artist: String,
+        title: String,
+        cover: Bitmap? = null,
+    ) {
         if (artist.isBlank()) {
             val parsed = TrackText.parse(title)
             if (parsed != null) {
-                publish(packageName, parsed.first, parsed.second)
+                publish(packageName, parsed.first, parsed.second, cover)
                 return
             }
         }
 
         val app = application as? EchoApplication ?: return
         val cleanArtist = artist.ifBlank { "Неизвестный исполнитель" }
-        app.container.repository.onSystemTrackDetected(cleanArtist, title, packageName)
+        app.container.repository.onSystemTrackDetected(cleanArtist, title, packageName, cover)
     }
 
     private data class SessionBinding(

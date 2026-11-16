@@ -1,5 +1,7 @@
 package ru.echo.radar.data.repository
 
+import android.graphics.Bitmap
+import android.util.Base64
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -17,6 +19,7 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
+import java.io.ByteArrayOutputStream
 import ru.echo.radar.data.mapper.EchoMapper
 import ru.echo.radar.data.remote.ApiError
 import ru.echo.radar.data.remote.ApiResult
@@ -53,6 +56,9 @@ class EchoRepository(
 
     private val _track = MutableStateFlow(PlayingTrack())
     val track: StateFlow<PlayingTrack> = _track.asStateFlow()
+
+    private val _cover = MutableStateFlow<Bitmap?>(null)
+    val cover: StateFlow<Bitmap?> = _cover.asStateFlow()
 
     private val _config = MutableStateFlow(EchoSettings())
     val config: StateFlow<EchoSettings> = _config.asStateFlow()
@@ -117,16 +123,30 @@ class EchoRepository(
     // ── Музыка ──────────────────────────────────────────────────────────────
 
     /** Вызывается медиа-службой при смене трека. Дубли отсекаются здесь же. */
-    fun onSystemTrackDetected(artist: String, title: String, packageName: String) {
+    fun onSystemTrackDetected(
+        artist: String,
+        title: String,
+        packageName: String,
+        cover: Bitmap? = null,
+    ) {
         if (TrackSanitizer.isJunk(artist, title)) return
 
         val cleanArtist = artist.trim().ifBlank { "Неизвестный исполнитель" }
         val cleanTitle = title.trim()
         val source = SourceApps.labelFor(packageName)
         val current = _track.value
-        if (current.artist == cleanArtist && current.title == cleanTitle) return
+
+        if (current.artist == cleanArtist && current.title == cleanTitle) {
+            // Обложка часто приходит вторым колбэком уже после названия трека.
+            if (cover != null && _cover.value == null) {
+                _cover.value = cover
+                scope.launch { sendSignal(cleanArtist, cleanTitle, source) }
+            }
+            return
+        }
 
         _track.value = PlayingTrack(cleanArtist, cleanTitle, source)
+        _cover.value = cover
 
         if (lastSentTrack == Pair(cleanArtist, cleanTitle)) return
         lastSentTrack = Pair(cleanArtist, cleanTitle)
@@ -146,6 +166,7 @@ class EchoRepository(
             return
         }
         _track.value = PlayingTrack(artist, title, "Вручную")
+        _cover.value = null
         lastSentTrack = Pair(artist, title)
         scope.launch { sendSignal(artist, title, "Вручную") }
     }
@@ -298,6 +319,7 @@ class EchoRepository(
             put("title", title)
             put("sourceName", sourceName)
             put("zoneName", settings.zoneName)
+            encodeCover(_cover.value)?.let { encoded -> put("coverBase64", encoded) }
         }
 
         when (val result = api.post(settings.host, settings.token, deviceId, "/api/signal", payload)) {
@@ -350,6 +372,31 @@ class EchoRepository(
 
     private fun emit(event: EchoEvent) {
         _events.tryEmit(event)
+    }
+
+    /** Обложка для сервера: не больше 640 px, JPEG 82 %, чтобы влезала в один POST. */
+    private fun encodeCover(bitmap: Bitmap?): String? {
+        if (bitmap == null) return null
+        return try {
+            val maxSide = 640
+            val largest = maxOf(bitmap.width, bitmap.height)
+            val scaled = if (largest > maxSide) {
+                val ratio = maxSide.toFloat() / largest
+                Bitmap.createScaledBitmap(
+                    bitmap,
+                    (bitmap.width * ratio).toInt().coerceAtLeast(1),
+                    (bitmap.height * ratio).toInt().coerceAtLeast(1),
+                    true,
+                )
+            } else {
+                bitmap
+            }
+            val stream = ByteArrayOutputStream()
+            scaled.compress(Bitmap.CompressFormat.JPEG, 82, stream)
+            Base64.encodeToString(stream.toByteArray(), Base64.NO_WRAP)
+        } catch (e: Exception) {
+            null
+        }
     }
 
     private companion object {

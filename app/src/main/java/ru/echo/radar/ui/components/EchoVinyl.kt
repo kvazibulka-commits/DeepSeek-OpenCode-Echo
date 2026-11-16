@@ -1,5 +1,6 @@
 package ru.echo.radar.ui.components
 
+import android.graphics.Bitmap
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -7,6 +8,7 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.shape.CircleShape
@@ -16,6 +18,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
@@ -32,6 +35,7 @@ fun EchoVinyl(
     coverUrl: String?,
     isKnown: Boolean,
     modifier: Modifier = Modifier,
+    coverBitmap: Bitmap? = null,
 ) {
     val transition = rememberInfiniteTransition(label = "vinyl")
     val angle by transition.animateFloat(
@@ -77,7 +81,21 @@ fun EchoVinyl(
                 )
             }
 
-            if (coverUrl != null) {
+            if (coverBitmap != null) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize(0.34f)
+                        .clip(CircleShape)
+                        .align(Alignment.Center),
+                ) {
+                    Image(
+                        bitmap = coverBitmap.asImageBitmap(),
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                }
+            } else if (coverUrl != null) {
                 Box(
                     modifier = Modifier
                         .fillMaxSize(0.34f)

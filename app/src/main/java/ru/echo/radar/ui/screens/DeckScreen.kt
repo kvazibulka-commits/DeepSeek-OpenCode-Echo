@@ -63,6 +63,7 @@ fun DeckScreen(
     val scope = rememberCoroutineScope()
     val snapshot by repository.snapshot.collectAsStateWithLifecycle()
     val track by repository.track.collectAsStateWithLifecycle()
+    val cover by repository.cover.collectAsStateWithLifecycle()
     val config by repository.config.collectAsStateWithLifecycle()
 
     var mediaAccess by remember { mutableStateOf(NotificationAccess.isEnabled(context)) }
@@ -98,6 +99,7 @@ fun DeckScreen(
                 isKnown = track.isKnown,
                 topChip = "33⅓ · живой винил",
                 bottomChip = track.sourceApp.ifBlank { "игла ждёт" },
+                coverBitmap = cover,
             )
         }
 

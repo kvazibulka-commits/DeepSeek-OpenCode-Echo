@@ -46,6 +46,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
 import ru.echo.radar.data.repository.EchoRepository
+import ru.echo.radar.data.discovery.EchoDiscovery
 import ru.echo.radar.data.settings.EchoSettingsStore
 import ru.echo.radar.domain.model.ECHO_ZONES
 import ru.echo.radar.domain.model.EchoConnection
@@ -271,6 +272,37 @@ fun SettingsScreen(
                 style = MaterialTheme.typography.bodySmall,
                 color = EchoColors.TextSecondary,
                 modifier = Modifier.padding(horizontal = 18.dp),
+            )
+        }
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        OutlinedButton(
+            onClick = {
+                scope.launch {
+                    isChecking = true
+                    statusText = "Ищу сервер в Wi-Fi…"
+                    val found = EchoDiscovery.findServer()
+                    isChecking = false
+                    if (found != null) {
+                        host = found
+                        settingsStore.saveConnection(found, token)
+                        repository.refreshNow()
+                        statusText = "Найден сервер: $found"
+                    } else {
+                        statusText = "Сервер не найден — проверьте Wi-Fi и run-server.bat"
+                    }
+                }
+            },
+            enabled = !isChecking,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 18.dp),
+        ) {
+            Text(
+                text = "НАЙТИ СЕРВЕР В WI-FI",
+                style = MaterialTheme.typography.labelMedium,
+                color = EchoColors.SkyBlue,
             )
         }
 

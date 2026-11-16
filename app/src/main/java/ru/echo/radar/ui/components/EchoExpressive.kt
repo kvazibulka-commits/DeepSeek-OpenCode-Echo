@@ -1,5 +1,6 @@
 package ru.echo.radar.ui.components
 
+import android.graphics.Bitmap
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -346,6 +347,7 @@ fun EchoVinylHero(
     topChip: String,
     bottomChip: String,
     modifier: Modifier = Modifier,
+    coverBitmap: Bitmap? = null,
 ) {
     Box(
         modifier = modifier
@@ -364,6 +366,7 @@ fun EchoVinylHero(
             labelColorHex = labelColorHex,
             coverUrl = coverUrl,
             isKnown = isKnown,
+            coverBitmap = coverBitmap,
             modifier = Modifier
                 .fillMaxWidth(0.72f)
                 .aspectRatio(1f),
