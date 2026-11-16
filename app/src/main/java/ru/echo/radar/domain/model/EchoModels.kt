@@ -22,6 +22,7 @@ data class EchoSignal(
     val sourceName: String,
     val personaTitle: String,
     val personaObservation: String,
+    val personaSource: String = "",
     val moodLabel: String,
     val resonanceStory: String,
     val compatibility: Int,

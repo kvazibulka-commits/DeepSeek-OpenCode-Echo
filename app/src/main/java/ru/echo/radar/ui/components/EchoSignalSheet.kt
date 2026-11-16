@@ -252,6 +252,14 @@ fun EchoSignalSheet(
                     color = EchoColors.TextSecondary,
                 )
             }
+            if (signal.personaSource.isNotBlank()) {
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = "образ: ${signal.personaSource}",
+                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.5.sp),
+                    color = EchoColors.TextDim,
+                )
+            }
 
             if (signal.encountersCount > 1 || signal.isGhost) {
                 Spacer(modifier = Modifier.height(12.dp))

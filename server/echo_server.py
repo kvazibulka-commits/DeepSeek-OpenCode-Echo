@@ -18,6 +18,7 @@ import ipaddress
 import json
 import logging
 import os
+import queue
 import secrets
 import socket
 import sqlite3
@@ -30,6 +31,7 @@ from datetime import datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 try:
+    from . import ai
     from .genres import GenreInfo, genre_label, origin_label, resolve_genre
     from .personas import persona_for
     from .resonance import (
@@ -40,6 +42,7 @@ try:
         seed_int,
     )
 except ImportError:  # запуск как `python server/echo_server.py`
+    import ai
     from genres import GenreInfo, genre_label, origin_label, resolve_genre
     from personas import persona_for
     from resonance import (
@@ -297,6 +300,13 @@ CREATE TABLE IF NOT EXISTS history (
 );
 CREATE INDEX IF NOT EXISTS idx_devices_updated ON devices(updated_at DESC);
 CREATE INDEX IF NOT EXISTS idx_history_device ON history(device_id, id DESC);
+CREATE TABLE IF NOT EXISTS track_meta (
+    key TEXT PRIMARY KEY,
+    archetype TEXT DEFAULT '',
+    observation TEXT DEFAULT '',
+    model TEXT DEFAULT '',
+    updated_at REAL DEFAULT 0
+);
 """
 
 
@@ -322,6 +332,7 @@ def init_db() -> None:
         ensure_column(conn, "devices", "album", "TEXT DEFAULT ''")
         ensure_column(conn, "devices", "genre", "TEXT DEFAULT ''")
         ensure_column(conn, "devices", "genre_origin", "TEXT DEFAULT ''")
+        ensure_column(conn, "devices", "ai_model", "TEXT DEFAULT ''")
         ensure_column(conn, "capsules", "album", "TEXT DEFAULT ''")
         ensure_column(conn, "history", "album", "TEXT DEFAULT ''")
         conn.commit()
@@ -434,6 +445,106 @@ def record_history(
     )
 
 
+# ── GigaChat: фоновое обогащение архетипов ───────────────────────────────────
+
+AI_QUEUE: "queue.Queue[tuple[str, str, str, str, str, str]]" = queue.Queue(maxsize=48)
+
+
+def ai_cache_get(key: str) -> dict | None:
+    if not key:
+        return None
+    with DB_LOCK:
+        conn = connect()
+        try:
+            row = conn.execute(
+                "SELECT archetype, observation, model FROM track_meta WHERE key = ?",
+                (key,),
+            ).fetchone()
+        finally:
+            conn.close()
+    if not row or not row["archetype"]:
+        return None
+    return {
+        "archetype": row["archetype"],
+        "observation": row["observation"] or "",
+        "model": row["model"] or "",
+    }
+
+
+def ai_cache_put(key: str, result: dict) -> None:
+    if not key:
+        return
+    with DB_LOCK:
+        conn = connect()
+        try:
+            conn.execute(
+                """
+                INSERT OR REPLACE INTO track_meta (key, archetype, observation, model, updated_at)
+                VALUES (?, ?, ?, ?, ?)
+                """,
+                (
+                    key,
+                    result.get("archetype", ""),
+                    result.get("observation", ""),
+                    result.get("model", ""),
+                    time.time(),
+                ),
+            )
+            conn.execute(
+                "DELETE FROM track_meta WHERE key NOT IN"
+                " (SELECT key FROM track_meta ORDER BY updated_at DESC LIMIT 2000)"
+            )
+            conn.commit()
+        finally:
+            conn.close()
+
+
+def _ai_worker() -> None:
+    while True:
+        task = AI_QUEUE.get()
+        try:
+            device_id, artist, title, album, label, key = task
+            result = ai.generate(artist, title, album, label)
+            if not result:
+                continue
+            ai_cache_put(key, result)
+            with DB_LOCK:
+                conn = connect()
+                try:
+                    conn.execute(
+                        """
+                        UPDATE devices
+                        SET persona_title = ?, persona_observation = ?, ai_model = ?
+                        WHERE id = ? AND artist = ? AND title = ?
+                        """,
+                        (
+                            result["archetype"],
+                            result["observation"],
+                            result.get("model", ""),
+                            device_id,
+                            artist,
+                            title,
+                        ),
+                    )
+                    conn.commit()
+                finally:
+                    conn.close()
+            logger.info("GigaChat: %s — %s → %s", artist, title, result["archetype"])
+        except Exception as exc:
+            logger.debug("GigaChat worker: %s", exc)
+        finally:
+            AI_QUEUE.task_done()
+            time.sleep(1.0)
+
+
+def start_ai_worker() -> None:
+    if not ai.available():
+        logger.info("GigaChat выключен: нет ECHO_GIGACHAT_CLIENT_ID/SECRET")
+        return
+    threading.Thread(target=_ai_worker, daemon=True).start()
+    logger.info("GigaChat включён: модель %s", ai.model_name())
+
+
 def upsert_signal(
     device_id: str,
     artist: str,
@@ -454,6 +565,17 @@ def upsert_signal(
     info = resolve_genre(artist, title, album, genre)
     acoustics = infer_acoustics(artist, title, album, genre=info.genre)
     persona = persona_for(artist, title, album, acoustics, info.genre, info.label)
+
+    track_key = ai.cache_key(artist, title, album)
+    cached = ai_cache_get(track_key) if ai.available() else None
+    ai_model = ""
+    if cached:
+        ai_model = cached.get("model", "") or ""
+        persona = {
+            **persona,
+            "personaTitle": cached["archetype"] or persona["personaTitle"],
+            "personaObservation": cached["observation"] or persona["personaObservation"],
+        }
 
     seed = seed_int(device_id, artist, title)
     distance = 25 + seed % 175
@@ -479,8 +601,8 @@ def upsert_signal(
                     persona_title, persona_observation, mood_label, color_hex,
                     avatar_petals, zone_name, distance_meters, angle_degrees,
                     distance_ratio, compatibility_percent, encounters_count,
-                    reactions_json, lat, lon, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    reactions_json, lat, lon, updated_at, ai_model
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     device_id, artist, title, album, info.genre, info.origin,
@@ -488,7 +610,7 @@ def upsert_signal(
                     persona["personaTitle"], persona["personaObservation"],
                     persona["moodLabel"], ensure_color(persona["colorHex"]),
                     int(persona["avatarPetals"]), zone, distance, angle, ratio,
-                    78 + seed % 20, encounters, reactions_json, lat, lon, now,
+                    78 + seed % 20, encounters, reactions_json, lat, lon, now, ai_model,
                 ),
             )
             record_history(
@@ -501,6 +623,14 @@ def upsert_signal(
 
     if cover_bytes:
         store_cover(device_id, cover_bytes)
+
+    if ai.available() and not cached:
+        try:
+            AI_QUEUE.put_nowait(
+                (device_id, artist, title, album, info.label, track_key)
+            )
+        except queue.Full:
+            logger.debug("GigaChat: очередь переполнена, пропускаем %s", title)
     return True
 
 
@@ -610,6 +740,7 @@ def build_state(device_id: str) -> dict:
                 f"Призрачный след: звучал {age_min} мин назад. {row['persona_observation']}"
                 if is_ghost else (row["persona_observation"] or "Слушает музыку в вечерней тишине.")
             ),
+            "personaSource": row["ai_model"] or "",
             "moodLabel": (
                 f"Призрачный след ({age_min} мин)" if is_ghost
                 else (row["mood_label"] or "Тёплый винил")
@@ -1360,6 +1491,7 @@ def main() -> None:
     ensure_demo_signals()
     start_udp_broadcast()
     start_pc_bridge()
+    start_ai_worker()
     local_ip = get_local_ip()
     server = EchoServer(("0.0.0.0", PORT), EchoHandler)
     logger.info("=" * 62)

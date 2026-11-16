@@ -40,6 +40,7 @@ data class SignalDto(
     val distanceRatio: Float = 0.45f,
     val personaTitle: String = "Архивариус забытых кассет",
     val personaObservation: String = "",
+    val personaSource: String = "",
     val moodLabel: String = "Теплый винил",
     val compatibilityPercent: Int = 80,
     val bpm: Int = 120,

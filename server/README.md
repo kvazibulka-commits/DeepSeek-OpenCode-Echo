@@ -24,14 +24,16 @@ run-server.bat
 | `echo_server.py` | HTTP API, SQLite, обложки, реакции, PC-мост, UDP-поиск |
 | `resonance.py` | Camelot, темп, жанровые семьи, формула резонанса |
 | `genres.py` | жанр из плеера → Яндекс → каталог → «не указан» |
+| `ai.py` | GigaChat: генерация архетипа в фоне, кэш, мягкий отказ |
 | `archetypes.py` | смысловые архетипы треков (мотивы, роли, образы) |
 | `personas.py` | совместимость: `persona_for` для старых вызовов |
 | `templates/dashboard.html` | новый пульт без emoji и legacy |
 | `tests/test_core.py` | юнит-тесты ядра |
 | `tests/test_archetypes.py` | тесты жанров и архетипов |
+| `tests/test_ai.py` | разбор ответа GigaChat и кэш-ключ |
 
 Точный алгоритм резонанса: `RESONANCE.md`. Архетипы и источник жанра:
-`ARCHETYPES.md`.
+`ARCHETYPES.md`. Подключение ИИ: `GIGACHAT.md`.
 
 ## API
 

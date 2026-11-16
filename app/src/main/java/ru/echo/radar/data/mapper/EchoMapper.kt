@@ -62,6 +62,7 @@ object EchoMapper {
         sourceName = sourceName.ifBlank { "ЭХО" },
         personaTitle = personaTitle.ifBlank { "Архивариус забытых кассет" },
         personaObservation = personaObservation,
+        personaSource = personaSource,
         moodLabel = moodLabel,
         resonanceStory = resonanceStory,
         compatibility = compatibilityPercent.coerceIn(0, 100),
