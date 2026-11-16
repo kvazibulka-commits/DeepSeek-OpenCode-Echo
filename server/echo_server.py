@@ -109,6 +109,11 @@ NEEDLE_SYNCS: dict[str, dict] = {}
 COVERS: "OrderedDict[str, tuple[str, bytes]]" = OrderedDict()
 MAX_COVERS = 40
 
+DEMO_ENABLED = os.environ.get("ECHO_DEMO_SIGNALS", "1") != "0"
+DEMO_MATCH_ID = "sig_demo_match"
+DEMO_MISMATCH_ID = "sig_demo_mismatch"
+DEMO_IDS = (DEMO_MATCH_ID, DEMO_MISMATCH_ID)
+
 
 # ── Конфиг ───────────────────────────────────────────────────────────────────
 
@@ -319,6 +324,87 @@ def init_db() -> None:
         conn.close()
 
 
+def ensure_demo_signals() -> None:
+    """Два статичных маяка для проверки сонара и луча на эмуляторе.
+
+    Совпадение (92 %) и антипод (58 %) не зависят от вашего трека — это демо.
+    Живой трек ПК добавляется отдельно через SMTC.
+    """
+    if not DEMO_ENABLED:
+        return
+
+    now = time.time()
+    specs = [
+        {
+            "id": DEMO_MATCH_ID,
+            "title": "Тихий маяк",
+            "album": "Демо-созвучие",
+            "persona": "Маяк тихого созвучия",
+            "observation": "Стоит в тумане и звучит в вашей тональности.",
+            "mood": "Демо-созвучие",
+            "color": 0xFFFFD700,
+            "petals": 7,
+            "distance": 62,
+            "angle": 48.0,
+            "ratio": 0.38,
+            "compat": 92,
+        },
+        {
+            "id": DEMO_MISMATCH_ID,
+            "title": "Холодный шум",
+            "album": "Демо-антипод",
+            "persona": "Маяк холодного шума",
+            "observation": "Звучит намеренно мимо: для контраста на сонаре.",
+            "mood": "Демо-антипод",
+            "color": 0xFF64748B,
+            "petals": 5,
+            "distance": 148,
+            "angle": 214.0,
+            "ratio": 0.72,
+            "compat": 58,
+        },
+    ]
+
+    with DB_LOCK:
+        conn = connect()
+        try:
+            present = {
+                row["id"]
+                for row in conn.execute(
+                    "SELECT id FROM devices WHERE id IN (?, ?)",
+                    DEMO_IDS,
+                )
+            }
+            for spec in specs:
+                if spec["id"] in present:
+                    conn.execute(
+                        "UPDATE devices SET updated_at = ? WHERE id = ?",
+                        (now, spec["id"]),
+                    )
+                    continue
+                lat, lon = zone_coords("Вечерняя улица", spec["id"])
+                conn.execute(
+                    """
+                    INSERT OR REPLACE INTO devices (
+                        id, artist, title, album, source_name, persona_title, persona_observation,
+                        mood_label, color_hex, avatar_petals, zone_name, distance_meters,
+                        angle_degrees, distance_ratio, compatibility_percent, encounters_count,
+                        reactions_json, lat, lon, updated_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, '{}', ?, ?, ?)
+                    """,
+                    (
+                        spec["id"], "ЭХО", spec["title"], spec["album"], "Демо-маяк",
+                        spec["persona"], spec["observation"], spec["mood"],
+                        ensure_color(spec["color"]), spec["petals"], "Вечерняя улица",
+                        spec["distance"], spec["angle"], spec["ratio"], spec["compat"],
+                        lat, lon, now,
+                    ),
+                )
+            conn.commit()
+        finally:
+            conn.close()
+
+
 def record_history(
     conn: sqlite3.Connection,
     device_id: str,
@@ -414,6 +500,7 @@ def upsert_signal(
 # ── Состояние ────────────────────────────────────────────────────────────────
 
 def build_state(device_id: str) -> dict:
+    ensure_demo_signals()
     now = time.time()
     cutoff = now - 90 * 60
 
@@ -455,14 +542,22 @@ def build_state(device_id: str) -> dict:
     for row in rows:
         if row["id"] == device_id:
             continue
-        age_min = max(0, int((now - float(row["updated_at"] or 0)) / 60))
-        is_ghost = age_min > 5
+        is_demo = row["id"] in DEMO_IDS
+        age_min = 0 if is_demo else max(0, int((now - float(row["updated_at"] or 0)) / 60))
+        is_ghost = False if is_demo else age_min > 5
 
         other = infer_acoustics(
             row["artist"], row["title"], row["album"] or "",
             row["mood_label"] or "",
         )
-        if my_acoustics:
+        if is_demo:
+            if row["id"] == DEMO_MATCH_ID:
+                percent = 92
+                story = "Демо-созвучие: маяк совпадает с вашим треком — так выглядит резонанс."
+            else:
+                percent = 58
+                story = "Демо-антипод: намеренно не совпадает — для контраста на сонаре."
+        elif my_acoustics:
             percent, story = resonance(my_acoustics, other)
         else:
             percent = int(row["compatibility_percent"] or 80)
@@ -1215,6 +1310,7 @@ class EchoServer(ThreadingHTTPServer):
 
 def main() -> None:
     init_db()
+    ensure_demo_signals()
     start_udp_broadcast()
     start_pc_bridge()
     local_ip = get_local_ip()

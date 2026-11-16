@@ -60,6 +60,7 @@ import kotlinx.coroutines.launch
 
 private const val RESONANCE_THRESHOLD = 85
 private const val BEAM_COOLDOWN_MS = 10_000L
+private const val DEMO_MATCH_ID = "sig_demo_match"
 
 @Composable
 fun AirScreen(repository: EchoRepository, onOpenSettings: () -> Unit) {
@@ -89,13 +90,33 @@ fun AirScreen(repository: EchoRepository, onOpenSettings: () -> Unit) {
             previousCompatibility = emptyMap()
         }
 
+        val now = System.currentTimeMillis()
+
+        fun triggerBeam(signal: EchoSignal) {
+            beamSignal = signal
+            lastBeamAt = now
+            beamScope.launch {
+                beamProgress.snapTo(0f)
+                beamProgress.animateTo(
+                    targetValue = 1f,
+                    animationSpec = tween(durationMillis = 1500, easing = FastOutSlowInEasing),
+                )
+                beamSignal = null
+            }
+        }
+
         if (!track.isKnown) {
             knownSignalIds = snapshot.signals.map { it.id }.toSet()
             previousCompatibility = snapshot.signals.associate { it.id to it.compatibility }
+            val demo = snapshot.signals.firstOrNull {
+                it.id == DEMO_MATCH_ID && it.compatibility >= RESONANCE_THRESHOLD && !it.isGhost
+            }
+            if (demo != null && beamSignal == null && now - lastBeamAt >= BEAM_COOLDOWN_MS) {
+                triggerBeam(demo)
+            }
             return@LaunchedEffect
         }
 
-        val now = System.currentTimeMillis()
         val newcomers = snapshot.signals.filter {
             it.id !in knownSignalIds && it.compatibility >= RESONANCE_THRESHOLD && !it.isGhost
         }
@@ -110,16 +131,7 @@ fun AirScreen(repository: EchoRepository, onOpenSettings: () -> Unit) {
 
         val candidate = (newcomers + crossed).maxByOrNull { it.compatibility }
         if (candidate != null && beamSignal == null && now - lastBeamAt >= BEAM_COOLDOWN_MS) {
-            beamSignal = candidate
-            lastBeamAt = now
-            beamScope.launch {
-                beamProgress.snapTo(0f)
-                beamProgress.animateTo(
-                    targetValue = 1f,
-                    animationSpec = tween(durationMillis = 1500, easing = FastOutSlowInEasing),
-                )
-                beamSignal = null
-            }
+            triggerBeam(candidate)
         }
     }
 
