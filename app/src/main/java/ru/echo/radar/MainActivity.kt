@@ -7,8 +7,13 @@ import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import ru.echo.radar.di.AppContainer
 import ru.echo.radar.ui.navigation.EchoApp
+import ru.echo.radar.ui.screens.WelcomeScreen
 import ru.echo.radar.ui.theme.EchoTheme
 
 class MainActivity : ComponentActivity() {
@@ -27,10 +32,24 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             EchoTheme {
-                EchoApp(
-                    repository = container.repository,
-                    settingsStore = container.settings,
-                )
+                var showWelcome by remember { mutableStateOf(!container.onboarding.isDone()) }
+                if (showWelcome) {
+                    WelcomeScreen(
+                        onEnter = {
+                            container.onboarding.markDone()
+                            showWelcome = false
+                        },
+                    )
+                } else {
+                    EchoApp(
+                        repository = container.repository,
+                        settingsStore = container.settings,
+                        onReplayWelcome = {
+                            container.onboarding.reset()
+                            showWelcome = true
+                        },
+                    )
+                }
             }
         }
     }

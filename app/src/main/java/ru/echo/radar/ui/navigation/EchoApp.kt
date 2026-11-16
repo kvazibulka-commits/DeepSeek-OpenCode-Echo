@@ -40,6 +40,7 @@ private const val SettingsRoute = "settings"
 fun EchoApp(
     repository: EchoRepository,
     settingsStore: EchoSettingsStore,
+    onReplayWelcome: () -> Unit,
 ) {
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
@@ -124,6 +125,7 @@ fun EchoApp(
                         repository = repository,
                         settingsStore = settingsStore,
                         onBack = { navController.popBackStack() },
+                        onReplayWelcome = onReplayWelcome,
                     )
                 }
             }

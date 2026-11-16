@@ -36,10 +36,23 @@ run-server.bat
 - `GET /api/cover/<id>` — обложка;
 - `GET /api/health` — статус;
 - `POST /api/signal`, `/api/react`, `/api/drop_capsule`, `/api/bump_encounter`,
-  `/api/needle_sync`, `/api/send_warmth`, `/api/wave_impulse`, `/api/delete_signal`.
+  `/api/needle_sync`, `/api/send_warmth`, `/api/wave_impulse`, `/api/delete_signal`,
+  `/api/delete_capsule`.
 
 Внешние запросы требуют `X-Echo-Token`; loopback — без токена.
 CORS открыт, `Cache-Control: no-store` для состояния.
+
+## Пульт
+
+`/` — чистый ночной пульт: KPI, сигналы с обложками, тайники, отклики и летопись.
+Рычаги:
+
+- «Волна в эфир» — broadcast-импульс;
+- на карточке сигнала — «Волна», «Отклик», «Удалить»;
+- «Создать тайник» — форма с альбомом, посланием, замком и бонусом;
+- у тайника — «Удалить».
+
+Каждый POST пишется в лог: `POST /api/... target=... sender=...`.
 
 ## Данные
 

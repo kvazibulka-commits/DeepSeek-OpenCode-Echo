@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="ru">
 <head>
 <meta charset="utf-8">
@@ -79,6 +79,26 @@
   .chip { font-size: 9px; padding: 3px 7px; border-radius: 999px; border: 1px solid var(--line-strong); color: #B6C0CD; white-space: nowrap; }
   .chip.hot { color: var(--cyan); border-color: rgba(0,240,255,.4); }
   .chip.ghost { color: var(--amber); border-color: rgba(255,184,0,.45); }
+  .actions { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 9px; }
+  .mini {
+    font-size: 9px; letter-spacing: .4px; padding: 5px 9px; border-radius: 999px;
+    background: rgba(30,41,59,.45); border: 1px solid var(--line-strong); color: var(--secondary);
+    cursor: pointer;
+  }
+  .mini:hover { color: var(--text); border-color: var(--sky); }
+  .mini.danger:hover { color: var(--danger); border-color: rgba(255,85,51,.5); }
+  .toast {
+    position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%);
+    background: var(--elevated); border: 1px solid var(--line-strong); color: var(--text);
+    border-radius: 999px; padding: 9px 16px; font-size: 11px; opacity: 0; pointer-events: none;
+    transition: opacity .2s ease; z-index: 50;
+  }
+  .toast.show { opacity: 1; }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+  .form-grid .wide { grid-column: 1 / -1; }
+  dialog label { display: block; font-size: 9px; letter-spacing: .8px; text-transform: uppercase; color: var(--dim); margin-bottom: 4px; }
+  dialog input, dialog select { width: 100%; padding: 9px 10px; border-radius: 9px; border: 1px solid var(--line-strong); background: var(--surface); color: var(--text); font-size: 12px; }
+  dialog textarea { width: 100%; min-height: 64px; padding: 9px 10px; border-radius: 9px; border: 1px solid var(--line-strong); background: var(--surface); color: var(--text); font-size: 12px; resize: vertical; }
 
   .split { display: grid; grid-template-columns: 1.1fr .9fr; gap: 16px; }
   .list { display: flex; flex-direction: column; gap: 9px; }
@@ -128,6 +148,8 @@
     <div class="brand">ЭХО <span>ночной пульт</span></div>
     <div class="live" id="live"><i></i><span>линия живая</span></div>
     <div class="spacer"></div>
+    <button class="ghost" id="broadcastButton">Волна в эфир</button>
+    <button class="ghost" id="capsuleButton">Создать тайник</button>
     <button class="ghost" id="tokenButton">Токен</button>
   </header>
 
@@ -155,6 +177,37 @@
   <h2>Летопись вечера</h2>
   <div class="list" id="history"></div>
 </div>
+
+<dialog id="capsuleDialog">
+  <h3>Новый тайник</h3>
+  <p>Оставьте трек с посланием. Заведение может дать гостю бонус вместо баннера.</p>
+  <div class="form-grid">
+    <div><label>Исполнитель</label><input id="capArtist" placeholder="Кино"></div>
+    <div><label>Трек</label><input id="capTitle" placeholder="Группа крови"></div>
+    <div class="wide"><label>Альбом</label><input id="capAlbum" placeholder="Группа крови"></div>
+    <div class="wide"><label>Послание</label><textarea id="capMessage" placeholder="Тёплый вечер в стекле"></textarea></div>
+    <div><label>Мин. резонанс</label>
+      <select id="capMin">
+        <option value="0">Открыт всем</option>
+        <option value="70">от 70%</option>
+        <option value="85">от 85%</option>
+        <option value="95">от 95%</option>
+      </select>
+    </div>
+    <div><label>Бонус гостям</label><input id="capPerk" placeholder="кофе"></div>
+    <div class="wide" style="display:flex;align-items:center;gap:8px">
+      <input id="capVenue" type="checkbox" style="width:auto">
+      <label for="capVenue" style="margin:0">Тайник заведения</label>
+    </div>
+    <div class="wide"><label>Название заведения</label><input id="capVenueName" placeholder="Кофейня «Эхо»"></div>
+  </div>
+  <div class="actions">
+    <button class="secondary" id="capCancel">Отмена</button>
+    <button class="primary" id="capSave">Спрятать</button>
+  </div>
+</dialog>
+
+<div class="toast" id="toast"></div>
 
 <dialog id="tokenDialog">
   <h3>Токен доступа</h3>
@@ -206,6 +259,11 @@
             <span class="chip">${esc(signal.zoneName)}</span>
             ${ghost}
           </div>
+          <div class="actions">
+            <button class="mini" data-action="wave" data-id="${esc(signal.id)}">Волна</button>
+            <button class="mini" data-action="react" data-id="${esc(signal.id)}">Отклик</button>
+            <button class="mini danger" data-action="delete-signal" data-id="${esc(signal.id)}">Удалить</button>
+          </div>
         </div>
       </article>`;
   }
@@ -222,6 +280,9 @@
         </div>
         <div class="album">${esc(capsule.album || capsule.zoneName)}</div>
         <div class="meta">${locked ? "послание закрыто" : esc(capsule.secretMessage)}</div>
+        <div class="actions">
+          <button class="mini danger" data-action="delete-capsule" data-id="${esc(capsule.id)}">Удалить</button>
+        </div>
       </article>`;
   }
 
@@ -308,8 +369,112 @@
     poll();
   });
 
+  let toastTimer = null;
+  function toast(message) {
+    const el = $("toast");
+    el.textContent = message;
+    el.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.remove("show"), 2600);
+  }
+
+  async function post(path, body) {
+    const headers = { "Content-Type": "application/json" };
+    if (token) headers["X-Echo-Token"] = token;
+    const response = await fetch(path, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(body),
+    });
+    if (!response.ok) throw new Error("HTTP " + response.status);
+    return response.json();
+  }
+
+  document.addEventListener("click", async (event) => {
+    const button = event.target.closest("[data-action]");
+    if (!button) return;
+    const id = button.getAttribute("data-id") || "";
+    const action = button.getAttribute("data-action");
+    try {
+      if (action === "wave") {
+        await post("/api/wave_impulse", { targetId: id, senderId: deviceId });
+        toast("Волна ушла в эфир");
+      } else if (action === "react") {
+        await post("/api/react", {
+          targetId: id,
+          senderId: deviceId,
+          symbol: "✦",
+          message: "Тихий отклик из ночного пульта",
+        });
+        toast("Отклик отправлен");
+      } else if (action === "delete-signal") {
+        if (!confirm("Удалить сигнал из эфира?")) return;
+        await post("/api/delete_signal", { targetId: id });
+        toast("Сигнал удалён");
+      } else if (action === "delete-capsule") {
+        if (!confirm("Удалить тайник?")) return;
+        await post("/api/delete_capsule", { targetId: id });
+        toast("Тайник удалён");
+      }
+      poll();
+    } catch (error) {
+      toast("Не получилось: " + error.message);
+    }
+  });
+
+  $("broadcastButton").addEventListener("click", async () => {
+    try {
+      await post("/api/wave_impulse", { targetId: "broadcast", senderId: deviceId });
+      toast("Волна ушла во все стороны");
+      poll();
+    } catch (error) {
+      toast("Не получилось: " + error.message);
+    }
+  });
+
+  $("capsuleButton").addEventListener("click", () => {
+    $("capArtist").value = "";
+    $("capTitle").value = "";
+    $("capAlbum").value = "";
+    $("capMessage").value = "";
+    $("capPerk").value = "";
+    $("capVenue").checked = false;
+    $("capVenueName").value = "";
+    $("capMin").value = "0";
+    $("capsuleDialog").showModal();
+  });
+  $("capCancel").addEventListener("click", () => $("capsuleDialog").close());
+  $("capSave").addEventListener("click", async () => {
+    const artist = $("capArtist").value.trim();
+    const title = $("capTitle").value.trim();
+    if (!artist || !title) {
+      toast("Нужны исполнитель и трек");
+      return;
+    }
+    try {
+      await post("/api/drop_capsule", {
+        creatorId: deviceId,
+        artist,
+        title,
+        album: $("capAlbum").value.trim(),
+        zoneName: "Вечерняя улица",
+        secretMessage: $("capMessage").value.trim(),
+        isVenue: $("capVenue").checked,
+        venueName: $("capVenueName").value.trim(),
+        minResonance: Number($("capMin").value),
+        secretPerk: $("capPerk").value.trim(),
+      });
+      $("capsuleDialog").close();
+      toast("Тайник спрятан");
+      poll();
+    } catch (error) {
+      toast("Не получилось: " + error.message);
+    }
+  });
+
   setInterval(poll, POLL_MS);
   poll();
 </script>
 </body>
 </html>
+

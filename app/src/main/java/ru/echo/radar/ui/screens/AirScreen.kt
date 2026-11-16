@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -36,20 +35,16 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ru.echo.radar.data.repository.EchoRepository
-import ru.echo.radar.domain.model.EchoCapsule
 import ru.echo.radar.domain.model.EchoSignal
 import ru.echo.radar.domain.model.EchoZone
 import ru.echo.radar.domain.model.SavedTrack
 import ru.echo.radar.domain.model.toSavedTrack
-import ru.echo.radar.ui.components.EchoCapsuleRow
-import ru.echo.radar.ui.components.EchoCapsuleSheet
 import ru.echo.radar.ui.components.EchoChoiceChip
 import ru.echo.radar.ui.components.EchoEmptyState
 import ru.echo.radar.ui.components.EchoExpressiveHeader
 import ru.echo.radar.ui.components.EchoHeroSonarCard
 import ru.echo.radar.ui.components.EchoMetric
 import ru.echo.radar.ui.components.EchoSectionLabel
-import ru.echo.radar.ui.components.EchoSegmentedControl
 import ru.echo.radar.ui.components.EchoSignalRow
 import ru.echo.radar.ui.components.EchoSignalSheet
 import ru.echo.radar.ui.components.EchoStatusLine
@@ -63,8 +58,6 @@ fun AirScreen(repository: EchoRepository, onOpenSettings: () -> Unit) {
     val savedTracks by repository.savedTracks.collectAsStateWithLifecycle()
 
     var selectedSignal by remember { mutableStateOf<EchoSignal?>(null) }
-    var selectedCapsule by remember { mutableStateOf<EchoCapsule?>(null) }
-    var mode by rememberSaveable { mutableStateOf(0) }
     var showCaches by rememberSaveable { mutableStateOf(true) }
     var zoom by remember { mutableStateOf(1f) }
 
@@ -98,12 +91,6 @@ fun AirScreen(repository: EchoRepository, onOpenSettings: () -> Unit) {
         }
 
         item {
-            EchoSegmentedControl(
-                options = listOf("СОНАР", "ТАЙНИКИ"),
-                selectedIndex = mode,
-                onSelect = { mode = it },
-            )
-            Spacer(modifier = Modifier.height(8.dp))
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -117,25 +104,24 @@ fun AirScreen(repository: EchoRepository, onOpenSettings: () -> Unit) {
                     accent = EchoColors.Amber,
                 )
             }
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(10.dp))
         }
 
-        if (mode == 0) {
-            item {
-                EchoHeroSonarCard(
-                    signals = snapshot.signals,
-                    capsules = if (showCaches) snapshot.capsules else emptyList(),
-                    thermalPatches = snapshot.thermalPatches,
-                    lagrange = snapshot.lagrange,
-                    syncedTargets = snapshot.syncedTargets,
-                    myColorHex = snapshot.myEcho.colorHex,
-                    isDawn = snapshot.isDawn,
-                    zoneCount = snapshot.zones.size,
-                    onSignalClick = { selectedSignal = it },
-                    zoom = zoom,
-                    onZoom = { factor -> zoom = (zoom * factor).coerceIn(1f, 2.5f) },
-                )
-            }
+        item {
+            EchoHeroSonarCard(
+                signals = snapshot.signals,
+                capsules = if (showCaches) snapshot.capsules else emptyList(),
+                thermalPatches = snapshot.thermalPatches,
+                lagrange = snapshot.lagrange,
+                syncedTargets = snapshot.syncedTargets,
+                myColorHex = snapshot.myEcho.colorHex,
+                isDawn = snapshot.isDawn,
+                zoneCount = snapshot.zones.size,
+                onSignalClick = { selectedSignal = it },
+                zoom = zoom,
+                onZoom = { factor -> zoom = (zoom * factor).coerceIn(1f, 2.5f) },
+            )
+        }
 
             item {
                 Spacer(modifier = Modifier.height(10.dp))
@@ -158,23 +144,6 @@ fun AirScreen(repository: EchoRepository, onOpenSettings: () -> Unit) {
                     )
                 }
             }
-
-        } else {
-            item { EchoSectionLabel("Тайники в эфире · ${snapshot.capsules.size}") }
-
-            if (snapshot.capsules.isEmpty()) {
-                item {
-                    EchoEmptyState(
-                        title = "Тайников пока нет",
-                        body = "Спрячьте первый трек с посланием — или дождитесь, пока кто-то оставит капсулу в вашем квартале.",
-                    )
-                }
-            } else {
-                items(snapshot.capsules, key = { it.id }) { capsule ->
-                    EchoCapsuleRow(capsule = capsule, onClick = { selectedCapsule = capsule })
-                }
-            }
-        }
     }
 
     selectedSignal?.let { signal ->
@@ -202,10 +171,6 @@ fun AirScreen(repository: EchoRepository, onOpenSettings: () -> Unit) {
                 selectedSignal = null
             },
         )
-    }
-
-    selectedCapsule?.let { capsule ->
-        EchoCapsuleSheet(capsule = capsule, onDismiss = { selectedCapsule = null })
     }
 }
 

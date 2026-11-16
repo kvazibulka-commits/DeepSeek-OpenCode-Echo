@@ -13,6 +13,7 @@ import ru.echo.radar.data.remote.EchoApiClient
 import ru.echo.radar.data.repository.EchoRepository
 import ru.echo.radar.data.settings.DeviceIdentity
 import ru.echo.radar.data.settings.EchoSettingsStore
+import ru.echo.radar.data.settings.OnboardingStore
 import ru.echo.radar.data.settings.SavedTracksStore
 import java.util.concurrent.TimeUnit
 
@@ -26,6 +27,7 @@ class AppContainer(context: Context) {
     private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     val settings = EchoSettingsStore(appContext)
+    val onboarding = OnboardingStore(appContext)
 
     private val httpClient = OkHttpClient.Builder()
         .connectTimeout(5, TimeUnit.SECONDS)

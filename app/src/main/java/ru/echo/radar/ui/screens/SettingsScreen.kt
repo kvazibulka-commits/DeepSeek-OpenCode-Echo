@@ -60,6 +60,7 @@ fun SettingsScreen(
     repository: EchoRepository,
     settingsStore: EchoSettingsStore,
     onBack: () -> Unit,
+    onReplayWelcome: () -> Unit,
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -344,6 +345,21 @@ fun SettingsScreen(
                 style = MaterialTheme.typography.bodySmall,
                 color = EchoColors.TextDim,
                 lineHeight = 17.sp,
+            )
+        }
+
+        Spacer(modifier = Modifier.height(14.dp))
+
+        OutlinedButton(
+            onClick = onReplayWelcome,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 18.dp),
+        ) {
+            Text(
+                text = "ПОКАЗАТЬ ЗНАКОМСТВО",
+                style = MaterialTheme.typography.labelMedium,
+                color = EchoColors.SkyBlue,
             )
         }
     }

@@ -1058,10 +1058,18 @@ class EchoHandler(BaseHTTPRequestHandler):
         parsed = urllib.parse.urlparse(self.path)
         path = parsed.path
         if path.startswith("/api/") and not self.check_token():
+            logger.info("POST %s отклонён: 401 (%s)", path, self.client_address[0])
             self.send_json({"status": "error", "message": "Unauthorized"}, 401)
             return
 
         data = self.read_json()
+        logger.info(
+            "POST %s от %s: target=%s sender=%s",
+            path,
+            self.client_address[0],
+            data.get("targetId", ""),
+            data.get("senderId", ""),
+        )
 
         if path == "/api/signal":
             device_id = sanitize_text(data.get("id"), 80) or f"dev_{int(time.time())}"
@@ -1158,6 +1166,18 @@ class EchoHandler(BaseHTTPRequestHandler):
                     conn.close()
             COVERS.pop(target, None)
             self.send_json(build_state(""))
+            return
+
+        if path == "/api/delete_capsule":
+            target = sanitize_text(data.get("targetId") or data.get("id"), 80)
+            with DB_LOCK:
+                conn = connect()
+                try:
+                    conn.execute("DELETE FROM capsules WHERE id = ?", (target,))
+                    conn.commit()
+                finally:
+                    conn.close()
+            self.send_json({"status": "ok", "deleted": True})
             return
 
         if path == "/api/save_config":
