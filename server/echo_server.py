@@ -30,6 +30,7 @@ from datetime import datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 try:
+    from .genres import GenreInfo, genre_label, origin_label, resolve_genre
     from .personas import persona_for
     from .resonance import (
         Acoustics,
@@ -39,6 +40,7 @@ try:
         seed_int,
     )
 except ImportError:  # запуск как `python server/echo_server.py`
+    from genres import GenreInfo, genre_label, origin_label, resolve_genre
     from personas import persona_for
     from resonance import (
         Acoustics,
@@ -50,7 +52,7 @@ except ImportError:  # запуск как `python server/echo_server.py`
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 CONFIG_PATH = os.path.join(BASE_DIR, "echo_config.json")
-DB_PATH = os.path.join(BASE_DIR, "echo_memory.db")
+DB_PATH = os.environ.get("ECHO_DB") or os.path.join(BASE_DIR, "echo_memory.db")
 TEMPLATES_DIR = os.path.join(BASE_DIR, "templates")
 DEFAULT_COLOR = 0xFF38BDF8
 MAX_TEXT = 240
@@ -318,6 +320,8 @@ def init_db() -> None:
         conn = connect()
         conn.executescript(SCHEMA)
         ensure_column(conn, "devices", "album", "TEXT DEFAULT ''")
+        ensure_column(conn, "devices", "genre", "TEXT DEFAULT ''")
+        ensure_column(conn, "devices", "genre_origin", "TEXT DEFAULT ''")
         ensure_column(conn, "capsules", "album", "TEXT DEFAULT ''")
         ensure_column(conn, "history", "album", "TEXT DEFAULT ''")
         conn.commit()
@@ -438,6 +442,7 @@ def upsert_signal(
     zone_name: str,
     album: str = "",
     cover_bytes: bytes | None = None,
+    genre: str = "",
 ) -> bool:
     artist = sanitize_text(artist, 160)
     title = sanitize_text(title, 180)
@@ -446,8 +451,9 @@ def upsert_signal(
         return False
 
     zone = normalize_zone(zone_name)
-    persona = persona_for(artist, title, album)
-    acoustics = infer_acoustics(artist, title, album, persona["moodLabel"])
+    info = resolve_genre(artist, title, album, genre)
+    acoustics = infer_acoustics(artist, title, album, genre=info.genre)
+    persona = persona_for(artist, title, album, acoustics, info.genre, info.label)
 
     seed = seed_int(device_id, artist, title)
     distance = 25 + seed % 175
@@ -469,14 +475,15 @@ def upsert_signal(
             conn.execute(
                 """
                 INSERT OR REPLACE INTO devices (
-                    id, artist, title, album, source_name, persona_title, persona_observation,
-                    mood_label, color_hex, avatar_petals, zone_name, distance_meters,
-                    angle_degrees, distance_ratio, compatibility_percent, encounters_count,
+                    id, artist, title, album, genre, genre_origin, source_name,
+                    persona_title, persona_observation, mood_label, color_hex,
+                    avatar_petals, zone_name, distance_meters, angle_degrees,
+                    distance_ratio, compatibility_percent, encounters_count,
                     reactions_json, lat, lon, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
-                    device_id, artist, title, album,
+                    device_id, artist, title, album, info.genre, info.origin,
                     sanitize_text(source_name, 80) or "ЭХО",
                     persona["personaTitle"], persona["personaObservation"],
                     persona["moodLabel"], ensure_color(persona["colorHex"]),
@@ -499,6 +506,24 @@ def upsert_signal(
 
 # ── Состояние ────────────────────────────────────────────────────────────────
 
+def row_genre(row: sqlite3.Row) -> GenreInfo:
+    """Жанр уже сохранённого сигнала: из плеера, каталога или догадки."""
+    if row["id"] in DEMO_IDS:
+        return GenreInfo("demo", genre_label("demo"), "demo")
+    stored = ""
+    origin = ""
+    try:
+        stored = (row["genre"] or "").strip()
+        origin = (row["genre_origin"] or "").strip()
+    except (IndexError, KeyError):
+        pass
+    if stored:
+        return GenreInfo(stored, genre_label(stored), origin or "catalog")
+    return resolve_genre(
+        row["artist"], row["title"], row["album"] or "", online=False
+    )
+
+
 def build_state(device_id: str) -> dict:
     ensure_demo_signals()
     now = time.time()
@@ -520,9 +545,10 @@ def build_state(device_id: str) -> dict:
             my_row = next((row for row in rows if row["id"] == device_id), None)
             my_acoustics: Acoustics | None = None
             if my_row:
+                my_info = row_genre(my_row)
                 my_acoustics = infer_acoustics(
                     my_row["artist"], my_row["title"], my_row["album"] or "",
-                    my_row["mood_label"] or "",
+                    genre=my_info.genre,
                 )
 
             history_rows = conn.execute(
@@ -548,7 +574,7 @@ def build_state(device_id: str) -> dict:
 
         other = infer_acoustics(
             row["artist"], row["title"], row["album"] or "",
-            row["mood_label"] or "",
+            genre=row_genre(row).genre,
         )
         if is_demo:
             if row["id"] == DEMO_MATCH_ID:
@@ -566,6 +592,8 @@ def build_state(device_id: str) -> dict:
         encounters = int(row["encounters_count"] or 1)
         if encounters > 1:
             story += f" Ваши волны встречаются уже {encounters}-й раз за неделю."
+
+        info = row_genre(row)
 
         signal = {
             "id": row["id"],
@@ -589,7 +617,10 @@ def build_state(device_id: str) -> dict:
             "compatibilityPercent": percent,
             "bpm": other.bpm,
             "camelotKey": other.camelot,
-            "genre": other.genre,
+            "genre": info.genre,
+            "genreLabel": info.label,
+            "genreOrigin": info.origin,
+            "genreOriginLabel": origin_label(info.origin),
             "resonanceDays": max(1, encounters),
             "encountersCount": max(1, encounters),
             "colorHex": ensure_color(row["color_hex"]),
@@ -826,7 +857,12 @@ def drop_capsule(payload: dict) -> None:
     min_res = max(0, min(99, int(payload.get("minResonance") or 0)))
     perk = sanitize_text(payload.get("secretPerk"), 160)
 
-    persona = persona_for(artist, title, album)
+    capsule_genre = resolve_genre(artist, title, album, online=False)
+    capsule_acoustics = infer_acoustics(artist, title, album, genre=capsule_genre.genre)
+    persona = persona_for(
+        artist, title, album, capsule_acoustics,
+        capsule_genre.genre, capsule_genre.label,
+    )
     seed = seed_int(creator, artist, title, "capsule")
     capsule_id = f"cap_{next_event_id()}"
     distance = 25 + seed % 120
@@ -931,6 +967,15 @@ def start_pc_bridge() -> None:
                 artist = (props.artist or "").strip()
                 title = (props.title or "").strip()
                 album = (getattr(props, "album_title", "") or "").strip()
+                source_genre = ""
+                try:
+                    raw_genres = getattr(props, "genres", None)
+                    if raw_genres:
+                        source_genre = ", ".join(
+                            str(item).strip() for item in raw_genres if str(item).strip()
+                        )
+                except Exception:
+                    source_genre = ""
                 app_id = session.source_app_user_model_id or "ПК"
                 app_name = app_id.split(".")[-1].split("!")[-1] or "ПК"
                 if not title:
@@ -952,6 +997,7 @@ def start_pc_bridge() -> None:
                     zone_name="Вечерняя улица",
                     album=album,
                     cover_bytes=cover,
+                    genre=source_genre,
                 )
                 if current != last_logged:
                     last_logged = current
@@ -1190,6 +1236,7 @@ class EchoHandler(BaseHTTPRequestHandler):
                 zone_name=normalize_zone(data.get("zoneName")),
                 album=sanitize_text(data.get("album"), 160),
                 cover_bytes=cover,
+                genre=sanitize_text(data.get("genre"), 80),
             )
             if not ok:
                 self.send_json({"status": "ignored", "message": "Junk track skipped"})

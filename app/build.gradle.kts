@@ -28,8 +28,8 @@ android {
         applicationId = "ru.echo.radar"
         minSdk = 26
         targetSdk = 34
-        versionCode = 10
-        versionName = "0.6.1"
+        versionCode = 11
+        versionName = "0.6.2"
 
         buildConfigField("String", "ECHO_DEFAULT_HOST", defaultValue("echo.host"))
         buildConfigField("String", "ECHO_DEFAULT_TOKEN", defaultValue("echo.token"))

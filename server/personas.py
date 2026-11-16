@@ -1,63 +1,41 @@
-"""Архетипы и образы ЭХО: детерминированные, без ИИ и сети."""
+"""Совместимость: архетип трека живёт в ``archetypes.py``.
+
+``persona_for`` оставлен как прежняя точка входа, чтобы не ломать вызовы
+в сервере и тестах. Он просто передаёт трек в смысловой движок архетипов.
+"""
 
 from __future__ import annotations
 
 try:
+    from .archetypes import archetype_for
     from .resonance import Acoustics, seed_int
 except ImportError:
+    from archetypes import archetype_for
     from resonance import Acoustics, seed_int
 
-PERSONAS = [
-    ("Архивариус забытых кассет", "Тёплый винил", 0xFF38BDF8, 6,
-     "Слушает старые записи так, будто перелистывает чужие письма."),
-    ("Проводник туманов", "Ночной эмбиент", 0xFFA855F7, 7,
-     "Идёт вдоль воды и не включает фонарь: город сам подсказывает дорогу."),
-    ("Хранитель северных лесов", "Холодная акустика", 0xFF34D399, 5,
-     "Слышит в шуме деревьев тот же ритм, что и в любимом треке."),
-    ("Меланхоличный космонавт", "Медленный синт", 0xFF00F0FF, 8,
-     "Смотрит на панельки как на орбитальные станции."),
-    ("Ловец виниловых волн", "Тёплый фанк", 0xFFFFB800, 6,
-     "Коллекционирует не пластинки, а моменты, когда игла находит канавку."),
-    ("Странник сонных набережных", "Ночной эмбиент", 0xFFA855F7, 5,
-     "Оставляет музыку на скамейках и не ждёт ответа."),
-    ("Пилигрим неоновых панелек", "Холодный синти", 0xFF38BDF8, 7,
-     "Слушает пост-панк в тумане панелек, где фонари гудят на частоте 50 герц."),
-    ("Созерцатель тихих чердаков", "Лоу-фай", 0xFFF87171, 4,
-     "Прячет любимые треки между страницами старых книг."),
-    ("Штурман полуночных мостов", "Дрим-поп", 0xFFC084FC, 6,
-     "Считает пролёты мостов и попадает в такт."),
-    ("Алхимик забытых мелодий", "Бархатный джаз", 0xFFFFB800, 8,
-     "Превращает случайный шум в тему вечера."),
-    ("Смотритель пустых перронов", "Медленный рок", 0xFF34D399, 5,
-     "Любит музыку, которая звучит как последний поезд."),
-    ("Картограф дождливых крыш", "Атмосферный техно", 0xFF38BDF8, 6,
-     "Рисует карты по звукам, которые долетают с соседних крыш."),
-    ("Странник стеклянных галерей", "Инди", 0xFF00F0FF, 7,
-     "Оставляет след только в эфире — и этого достаточно."),
-    ("Хранитель тихой частоты", "Даунтемпо", 0xFFA855F7, 5,
-     "Находит общий язык с теми, кто слушает тише всех."),
-    ("Паромщик ночных каналов", "Трип-хоп", 0xFF34D399, 6,
-     "Переправляет треки с одного берега вечера на другой."),
-    ("Собиратель эха", "Пост-рок", 0xFFF87171, 7,
-     "Запоминает не названия, а послевкусие."),
-]
 
-
-def persona_for(artist: str, title: str, album: str = "", acoustics: Acoustics | None = None) -> dict:
-    seed = seed_int(artist, title, album)
-    title_text, mood, color, petals, observation = PERSONAS[seed % len(PERSONAS)]
-    if acoustics:
-        mood = mood if mood else acoustics.genre
-    return {
-        "personaTitle": title_text,
-        "moodLabel": mood,
-        "personaObservation": observation,
-        "colorHex": color,
-        "avatarPetals": petals,
-    }
+def persona_for(
+    artist: str,
+    title: str,
+    album: str = "",
+    acoustics: Acoustics | None = None,
+    genre: str = "",
+    label: str = "",
+) -> dict:
+    return archetype_for(
+        artist=artist,
+        title=title,
+        album=album,
+        genre=genre,
+        label=label,
+        acoustics=acoustics,
+    )
 
 
 def zone_for(device_id: str, zones: list[str]) -> str:
     if not zones:
         return "Вечерняя улица"
     return zones[seed_int(device_id, "zone") % len(zones)]
+
+
+__all__ = ["persona_for", "zone_for"]

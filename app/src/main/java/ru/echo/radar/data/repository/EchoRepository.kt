@@ -365,6 +365,7 @@ class EchoRepository(
             put("zoneName", settings.zoneName)
             val track = _track.value
             if (track.album.isNotBlank()) put("album", track.album)
+            if (track.genre.isNotBlank()) put("genre", track.genre)
             if (track.year.isNotBlank()) put("year", track.year)
             encodeCover(_cover.value)?.let { encoded -> put("coverBase64", encoded) }
         }

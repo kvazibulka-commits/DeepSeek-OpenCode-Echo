@@ -214,8 +214,12 @@ fun EchoSonar(
         beam?.let { pulse ->
             val target = sonarPosition(pulse.angleDegrees, pulse.distanceRatio, center, maxR)
             val progress = pulse.progress().coerceIn(0f, 1f)
-            if (progress > 0.01f) {
-                val tailProgress = (progress - 0.30f).coerceAtLeast(0f)
+            // Мягкое появление и затухание: луч не вспыхивает и не мельтешит.
+            val fadeIn = (progress / 0.16f).coerceIn(0f, 1f)
+            val fadeOut = ((1f - progress) / 0.22f).coerceIn(0f, 1f)
+            val alpha = minOf(fadeIn, fadeOut)
+            if (alpha > 0.01f) {
+                val tailProgress = (progress - 0.26f).coerceAtLeast(0f)
                 val head = Offset(
                     center.x + (target.x - center.x) * progress,
                     center.y + (target.y - center.y) * progress,
@@ -227,35 +231,35 @@ fun EchoSonar(
                 drawLine(
                     brush = Brush.linearGradient(
                         colors = listOf(
-                            EchoColors.SignalCyan.copy(alpha = 0.10f),
-                            EchoColors.SignalCyan.copy(alpha = 0.75f),
-                            EchoColors.Gold,
+                            EchoColors.SignalCyan.copy(alpha = 0.10f * alpha),
+                            EchoColors.SignalCyan.copy(alpha = 0.60f * alpha),
+                            EchoColors.Gold.copy(alpha = alpha),
                         ),
                         start = tail,
                         end = head,
                     ),
                     start = tail,
                     end = head,
-                    strokeWidth = 3.dp.toPx(),
+                    strokeWidth = 2.6.dp.toPx(),
                     cap = StrokeCap.Round,
                 )
                 drawCircle(
-                    color = EchoColors.Gold.copy(alpha = 0.25f),
+                    color = EchoColors.Gold.copy(alpha = 0.22f * alpha),
                     radius = 9.dp.toPx(),
                     center = head,
                 )
                 drawCircle(
-                    color = EchoColors.Gold,
+                    color = EchoColors.Gold.copy(alpha = alpha),
                     radius = 3.dp.toPx(),
                     center = head,
                 )
                 if (progress > 0.70f) {
                     val flare = ((progress - 0.70f) / 0.30f).coerceIn(0f, 1f)
                     drawCircle(
-                        color = EchoColors.Gold.copy(alpha = (1f - flare) * 0.9f),
-                        radius = 10.dp.toPx() + flare * 18.dp.toPx(),
+                        color = EchoColors.Gold.copy(alpha = (1f - flare) * 0.75f * alpha),
+                        radius = 10.dp.toPx() + flare * 16.dp.toPx(),
                         center = target,
-                        style = Stroke(width = 1.5.dp.toPx()),
+                        style = Stroke(width = 1.4.dp.toPx()),
                     )
                 }
             }

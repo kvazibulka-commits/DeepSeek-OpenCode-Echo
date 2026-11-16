@@ -1,7 +1,7 @@
 package ru.echo.radar.ui.screens
 
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -29,7 +29,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -56,10 +55,11 @@ import ru.echo.radar.ui.components.EchoStatusLine
 import ru.echo.radar.ui.components.ResonanceBeam
 import ru.echo.radar.ui.components.pluralRu
 import ru.echo.radar.ui.theme.EchoColors
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
 
 private const val RESONANCE_THRESHOLD = 85
-private const val BEAM_COOLDOWN_MS = 10_000L
+private const val BEAM_TRAVEL_MS = 2600
+private const val BEAM_REST_MS = 3400L
 private const val DEMO_MATCH_ID = "sig_demo_match"
 
 @Composable
@@ -73,65 +73,34 @@ fun AirScreen(repository: EchoRepository, onOpenSettings: () -> Unit) {
     var showCaches by rememberSaveable { mutableStateOf(true) }
     var zoom by remember { mutableStateOf(1f) }
     val beamProgress = remember { Animatable(0f) }
-    var beamSignal by remember { mutableStateOf<EchoSignal?>(null) }
-    var knownSignalIds by remember { mutableStateOf<Set<String>>(emptySet()) }
-    var previousCompatibility by remember { mutableStateOf<Map<String, Int>>(emptyMap()) }
-    var lastBeamAt by remember { mutableStateOf(0L) }
-    var lastTrackKey by remember { mutableStateOf("") }
-    val beamScope = rememberCoroutineScope()
 
     val topResonance = snapshot.signals.maxOfOrNull { it.compatibility } ?: 0
-    val trackKey = "${track.artist}|${track.title}"
 
-    LaunchedEffect(snapshot.signals, trackKey) {
-        if (trackKey != lastTrackKey) {
-            lastTrackKey = trackKey
-            knownSignalIds = emptySet()
-            previousCompatibility = emptyMap()
+    val beamTarget = remember(snapshot.signals, track.isKnown) {
+        val candidates = snapshot.signals.filter {
+            !it.isGhost && it.compatibility >= RESONANCE_THRESHOLD
         }
-
-        val now = System.currentTimeMillis()
-
-        fun triggerBeam(signal: EchoSignal) {
-            beamSignal = signal
-            lastBeamAt = now
-            beamScope.launch {
-                beamProgress.snapTo(0f)
-                beamProgress.animateTo(
-                    targetValue = 1f,
-                    animationSpec = tween(durationMillis = 1500, easing = FastOutSlowInEasing),
-                )
-                beamSignal = null
-            }
+        if (track.isKnown) {
+            candidates.maxByOrNull { it.compatibility }
+        } else {
+            candidates.firstOrNull { it.id == DEMO_MATCH_ID }
+                ?: candidates.maxByOrNull { it.compatibility }
         }
+    }
 
-        if (!track.isKnown) {
-            knownSignalIds = snapshot.signals.map { it.id }.toSet()
-            previousCompatibility = snapshot.signals.associate { it.id to it.compatibility }
-            val demo = snapshot.signals.firstOrNull {
-                it.id == DEMO_MATCH_ID && it.compatibility >= RESONANCE_THRESHOLD && !it.isGhost
-            }
-            if (demo != null && beamSignal == null && now - lastBeamAt >= BEAM_COOLDOWN_MS) {
-                triggerBeam(demo)
-            }
+    LaunchedEffect(beamTarget?.id) {
+        if (beamTarget == null) {
+            beamProgress.snapTo(0f)
             return@LaunchedEffect
         }
-
-        val newcomers = snapshot.signals.filter {
-            it.id !in knownSignalIds && it.compatibility >= RESONANCE_THRESHOLD && !it.isGhost
-        }
-        val crossed = snapshot.signals.filter { signal ->
-            val previous = previousCompatibility[signal.id]
-            previous != null && previous < RESONANCE_THRESHOLD &&
-                signal.compatibility >= RESONANCE_THRESHOLD && !signal.isGhost
-        }
-
-        knownSignalIds = snapshot.signals.map { it.id }.toSet()
-        previousCompatibility = snapshot.signals.associate { it.id to it.compatibility }
-
-        val candidate = (newcomers + crossed).maxByOrNull { it.compatibility }
-        if (candidate != null && beamSignal == null && now - lastBeamAt >= BEAM_COOLDOWN_MS) {
-            triggerBeam(candidate)
+        // Спокойный вечный цикл: луч плавно идёт к сигналу, гаснет и возвращается.
+        while (true) {
+            beamProgress.snapTo(0f)
+            beamProgress.animateTo(
+                targetValue = 1f,
+                animationSpec = tween(durationMillis = BEAM_TRAVEL_MS, easing = LinearEasing),
+            )
+            delay(BEAM_REST_MS)
         }
     }
 
@@ -192,7 +161,7 @@ fun AirScreen(repository: EchoRepository, onOpenSettings: () -> Unit) {
                 onSignalClick = { selectedSignal = it },
                 zoom = zoom,
                 onZoom = { factor -> zoom = (zoom * factor).coerceIn(1f, 2.5f) },
-                beam = beamSignal?.let { signal ->
+                beam = beamTarget?.let { signal ->
                     ResonanceBeam(
                         angleDegrees = signal.angleDegrees,
                         distanceRatio = signal.distanceRatio,

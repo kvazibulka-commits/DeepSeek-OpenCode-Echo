@@ -31,22 +31,38 @@ DEFAULT_COLOR = 0xFF38BDF8
 
 GENRES = [
     "post-punk",
+    "darkwave",
     "synthwave",
     "ambient",
     "electronic",
     "indie",
     "rock",
     "jazz",
+    "soul",
     "lo-fi",
     "classical",
     "trip-hop",
     "metal",
     "folk",
+    "nordic folk",
+    "dark folk",
+    "dream-pop",
+    "post-rock",
+    "downtempo",
+    "hip-hop",
+    "pop",
+    "funk",
+    "disco",
+    "industrial",
+    "soundtrack",
+    "demo",
+    "unknown",
 ]
 
 # Жанровые семьи и мосты. Порядок важен: сначала более специфичные.
 SIBLINGS = {
     ("post-punk", "synthwave"),
+    ("post-punk", "darkwave"),
     ("ambient", "electronic"),
     ("jazz", "trip-hop"),
     ("indie", "rock"),
@@ -55,6 +71,19 @@ SIBLINGS = {
     ("metal", "rock"),
     ("electronic", "synthwave"),
     ("post-punk", "indie"),
+    ("nordic folk", "dark folk"),
+    ("dark folk", "folk"),
+    ("nordic folk", "folk"),
+    ("dream-pop", "indie"),
+    ("post-rock", "ambient"),
+    ("downtempo", "trip-hop"),
+    ("hip-hop", "electronic"),
+    ("pop", "disco"),
+    ("funk", "disco"),
+    ("soul", "jazz"),
+    ("industrial", "electronic"),
+    ("soundtrack", "classical"),
+    ("synthwave", "pop"),
 }
 
 BRIDGES = {
@@ -64,7 +93,53 @@ BRIDGES = {
     ("post-punk", "electronic"),
     ("metal", "ambient"),
     ("folk", "ambient"),
+    ("nordic folk", "metal"),
+    ("post-rock", "rock"),
+    ("dream-pop", "ambient"),
+    ("hip-hop", "funk"),
+    ("industrial", "metal"),
+    ("soundtrack", "ambient"),
+    ("disco", "electronic"),
+    ("soul", "pop"),
 }
+
+SIBLING_SET = frozenset(frozenset(pair) for pair in SIBLINGS)
+BRIDGE_SET = frozenset(frozenset(pair) for pair in BRIDGES)
+
+GENRE_LABELS = {
+    "post-punk": "пост-панк",
+    "darkwave": "дарквейв",
+    "synthwave": "синти-вейв",
+    "ambient": "эмбиент",
+    "electronic": "электроника",
+    "indie": "инди",
+    "rock": "рок",
+    "jazz": "джаз",
+    "soul": "соул",
+    "lo-fi": "лоу-фай",
+    "classical": "классика",
+    "trip-hop": "трип-хоп",
+    "metal": "метал",
+    "folk": "фолк",
+    "nordic folk": "северный фолк",
+    "dark folk": "дарк-фолк",
+    "dream-pop": "дрим-поп",
+    "post-rock": "пост-рок",
+    "downtempo": "даунтемпо",
+    "hip-hop": "хип-хоп",
+    "pop": "поп",
+    "funk": "фанк",
+    "disco": "диско",
+    "industrial": "индастриал",
+    "soundtrack": "саундтрек",
+    "demo": "демо-маяк",
+    "unknown": "жанр не указан",
+}
+
+
+def genre_label(genre: str) -> str:
+    key = (genre or "").strip()
+    return GENRE_LABELS.get(key, key)
 
 GENRE_KEYWORDS = {
     "post-punk": (
@@ -130,6 +205,21 @@ GENRE_BASE = {
     "trip-hop": (92, 0.44, 0.44, "A"),
     "metal": (140, 0.86, 0.34, "A"),
     "folk": (88, 0.34, 0.52, "B"),
+    "darkwave": (120, 0.50, 0.34, "A"),
+    "nordic folk": (96, 0.55, 0.45, "B"),
+    "dark folk": (90, 0.42, 0.36, "B"),
+    "dream-pop": (104, 0.45, 0.62, "B"),
+    "post-rock": (112, 0.58, 0.48, "B"),
+    "downtempo": (88, 0.38, 0.50, "B"),
+    "hip-hop": (92, 0.62, 0.48, "A"),
+    "pop": (118, 0.66, 0.70, "B"),
+    "funk": (108, 0.72, 0.72, "A"),
+    "disco": (120, 0.75, 0.76, "A"),
+    "industrial": (128, 0.82, 0.34, "A"),
+    "soundtrack": (86, 0.40, 0.50, "B"),
+    "soul": (94, 0.52, 0.68, "B"),
+    "demo": (100, 0.50, 0.50, "B"),
+    "unknown": (110, 0.55, 0.50, "B"),
 }
 
 
@@ -224,12 +314,14 @@ def detect_genre(artist: str, title: str, album: str = "", mood: str = "") -> st
 def genre_affinity(left: str, right: str) -> float:
     if not left or not right:
         return 0.0
+    if left == "unknown" and right == "unknown":
+        return 0.55
     if left == right:
         return 1.0
-    pair = tuple(sorted((left, right)))
-    if pair in {tuple(sorted(item)) for item in SIBLINGS}:
+    pair = frozenset((left, right))
+    if pair in SIBLING_SET:
         return 0.72
-    if pair in {tuple(sorted(item)) for item in BRIDGES}:
+    if pair in BRIDGE_SET:
         return 0.50
     return 0.15
 
@@ -293,8 +385,17 @@ class Acoustics:
     album: str = ""
 
 
-def infer_acoustics(artist: str, title: str, album: str = "", mood: str = "") -> Acoustics:
-    genre = detect_genre(artist, title, album, mood)
+def infer_acoustics(
+    artist: str,
+    title: str,
+    album: str = "",
+    mood: str = "",
+    genre: str | None = None,
+) -> Acoustics:
+    resolved = (genre or "").strip()
+    if not resolved or resolved not in GENRE_BASE:
+        resolved = detect_genre(artist, title, album, mood)
+    genre = resolved
     base_bpm, base_energy, base_valence, base_key = GENRE_BASE.get(genre, (110, 0.55, 0.5, "B"))
     seed = seed_int(artist, title, album or mood or genre)
 
@@ -351,9 +452,11 @@ def resonance(mine: Acoustics, other: Acoustics) -> tuple[int, str]:
         elif title >= 0.9:
             parts.append(f"Похожее название: «{mine.title}».")
         if genre >= 0.9:
-            parts.append(f"Один жанр: {mine.genre}.")
+            parts.append(f"Один жанр: {genre_label(mine.genre)}.")
         elif genre >= 0.5 and mine.genre and other.genre:
-            parts.append(f"Соседние жанры: {mine.genre} и {other.genre}.")
+            parts.append(
+                f"Соседние жанры: {genre_label(mine.genre)} и {genre_label(other.genre)}."
+            )
         if camelot >= 0.8:
             parts.append("Совпали тональности Camelot.")
         if tempo >= 0.8:

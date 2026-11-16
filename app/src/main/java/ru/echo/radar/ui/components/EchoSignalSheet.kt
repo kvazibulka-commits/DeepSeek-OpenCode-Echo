@@ -223,10 +223,18 @@ fun EchoSignalSheet(
             EchoSheetTitle("О ТРЕКЕ")
             Spacer(modifier = Modifier.height(6.dp))
             Text(
-                text = "${signal.zoneName} · ${signal.moodLabel} · ${signal.genre}",
+                text = "${signal.zoneName} · ${signal.genreLabel.ifBlank { signal.genre }}",
                 style = MaterialTheme.typography.bodyMedium,
                 color = EchoColors.TextSecondary,
             )
+            if (signal.hasTrustedGenre) {
+                Spacer(modifier = Modifier.height(3.dp))
+                Text(
+                    text = signal.genreOriginLabel.ifBlank { "жанр из источника" },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = EchoColors.TextDim,
+                )
+            }
 
             if (signal.resonanceStory.isNotBlank()) {
                 Spacer(modifier = Modifier.height(14.dp))

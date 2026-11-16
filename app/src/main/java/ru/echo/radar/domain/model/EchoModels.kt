@@ -38,7 +38,14 @@ data class EchoSignal(
     val ageMinutes: Int,
     val encountersCount: Int,
     val coverUrl: String?,
-)
+    val genreLabel: String = "",
+    val genreOrigin: String = "",
+    val genreOriginLabel: String = "",
+) {
+    /** Жанр пришёл из плеера или каталога — его можно показывать без оговорок. */
+    val hasTrustedGenre: Boolean
+        get() = genreOrigin == "player" || genreOrigin == "yandex" || genreOrigin == "catalog"
+}
 
 data class EchoCapsule(
     val id: String,

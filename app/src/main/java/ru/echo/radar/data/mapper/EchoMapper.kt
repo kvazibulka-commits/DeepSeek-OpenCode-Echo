@@ -78,6 +78,9 @@ object EchoMapper {
         ageMinutes = ageMinutes,
         encountersCount = encountersCount.coerceAtLeast(1),
         coverUrl = resolveCover(baseUrl, coverUrl, artist, title),
+        genreLabel = genreLabel,
+        genreOrigin = genreOrigin,
+        genreOriginLabel = genreOriginLabel,
     )
 
     private fun CapsuleDto.toDomain(): EchoCapsule = EchoCapsule(
