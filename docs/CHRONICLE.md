@@ -26,6 +26,9 @@
   `coverUrl=/api/cover/android_ci_test`, обложка отвечает `200 image/png`.
 - APK `echo-radar-0.3.0-debug.apk`, 10.8 МБ, versionCode 3.
 - Добавлено правило брандмауэра `Echo Radar Server 8080` (TCP 8080, все профили).
+- LAN-проверка: без токена — 401, с токеном — 200; UDP-пакет
+  `ECHO_SERVER_DISCOVERY:8080` приходит с `192.168.0.214`.
+- CI на `241bd0a` — success.
 
 **Проблемы**
 
