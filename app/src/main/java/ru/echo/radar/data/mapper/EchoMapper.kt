@@ -58,6 +58,7 @@ object EchoMapper {
         id = id,
         artist = artist.ifBlank { "Неизвестный исполнитель" },
         title = title.ifBlank { "Без названия" },
+        album = album,
         sourceName = sourceName.ifBlank { "ЭХО" },
         personaTitle = personaTitle.ifBlank { "Архивариус забытых кассет" },
         personaObservation = personaObservation,

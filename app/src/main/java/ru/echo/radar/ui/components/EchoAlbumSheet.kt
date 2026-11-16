@@ -71,10 +71,10 @@ fun EchoAlbumSheet(
             Row(verticalAlignment = Alignment.Top) {
                 Box(
                     modifier = Modifier
-                        .size(132.dp)
-                        .clip(RoundedCornerShape(22.dp))
+                        .size(168.dp)
+                        .clip(RoundedCornerShape(24.dp))
                         .background(EchoColors.Surface)
-                        .border(1.dp, EchoColors.Line, RoundedCornerShape(22.dp)),
+                        .border(1.dp, EchoColors.Line, RoundedCornerShape(24.dp)),
                     contentAlignment = Alignment.Center,
                 ) {
                     if (cover != null) {

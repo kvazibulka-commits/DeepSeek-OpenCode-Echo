@@ -1,5 +1,6 @@
 package ru.echo.radar.ui.components
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -24,6 +25,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
@@ -62,49 +64,75 @@ fun EchoSignalSheet(
                 .padding(horizontal = 18.dp)
                 .padding(bottom = 26.dp),
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                if (signal.coverUrl != null) {
-                    Box(
-                        modifier = Modifier
-                            .size(56.dp)
-                            .clip(RoundedCornerShape(16.dp))
-                            .border(1.dp, EchoColors.Line, RoundedCornerShape(16.dp)),
-                    ) {
-                        AsyncImage(
-                            model = signal.coverUrl,
-                            contentDescription = null,
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier.fillMaxSize(),
-                        )
-                    }
-                } else {
-                    EchoAvatar(petals = signal.avatarPetals, colorHex = signal.colorHex, size = 52.dp)
+            if (signal.coverUrl != null) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(196.dp)
+                        .clip(RoundedCornerShape(24.dp))
+                        .border(1.dp, EchoColors.Line, RoundedCornerShape(24.dp)),
+                ) {
+                    AsyncImage(
+                        model = signal.coverUrl,
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize(),
+                    )
                 }
-                Spacer(modifier = Modifier.width(12.dp))
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = signal.personaTitle,
-                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
-                        color = accent,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    Spacer(modifier = Modifier.height(3.dp))
-                    Text(
-                        text = "${signal.artist} — ${signal.title}",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = EchoColors.TextPrimary,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    Spacer(modifier = Modifier.height(3.dp))
-                    Text(
-                        text = "${signal.sourceName} · ${formatDistance(signal.distanceMeters)}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = EchoColors.TextDim,
+            } else {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(164.dp)
+                        .clip(RoundedCornerShape(24.dp))
+                        .background(
+                            Brush.linearGradient(
+                                listOf(accent.copy(alpha = 0.28f), EchoColors.Surface),
+                            ),
+                        )
+                        .border(1.dp, EchoColors.Line, RoundedCornerShape(24.dp)),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    EchoAvatar(
+                        petals = signal.avatarPetals,
+                        colorHex = signal.colorHex,
+                        size = 88.dp,
                     )
                 }
             }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Text(
+                text = signal.personaTitle,
+                style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                color = accent,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = "${signal.artist} — ${signal.title}",
+                style = MaterialTheme.typography.headlineMedium,
+                color = EchoColors.TextPrimary,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = "${signal.sourceName} · ${formatDistance(signal.distanceMeters)}",
+                style = MaterialTheme.typography.bodySmall,
+                color = EchoColors.TextDim,
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = signal.album.ifBlank { "Альбом не передан" },
+                style = MaterialTheme.typography.bodySmall,
+                color = if (signal.album.isBlank()) EchoColors.TextDim else EchoColors.TextSecondary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
 
             Spacer(modifier = Modifier.height(14.dp))
 

@@ -32,6 +32,7 @@ data class SignalDto(
     val id: String = "",
     val artist: String = "Неизвестный исполнитель",
     val title: String = "Без названия",
+    val album: String = "",
     val resonanceStory: String = "",
     val sourceName: String = "ЭХО",
     val distanceMeters: Int = 50,
