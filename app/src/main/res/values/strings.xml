@@ -2,4 +2,5 @@
 <resources>
     <string name="app_name">ЭХО</string>
     <string name="media_listener_label">ЭХО — слушает музыку в плеере</string>
+    <string name="widget_description">Трек, который звучит прямо сейчас</string>
 </resources>
