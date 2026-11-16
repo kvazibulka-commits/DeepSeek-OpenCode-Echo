@@ -25,6 +25,8 @@
 - Виджет «Сейчас играет»: `RemoteViews` + `echo_widget_prefs`, карточка 250×90,
   трек / артист / архетип цветом волны, тап открывает приложение.
   Обновляется коллектором `track + snapshot` с `distinctUntilChanged`.
+- `run-server.bat`: двойной клик запускает `echo_server.py`, проверяет Python,
+  открывает пульт; файл сохранён в Windows-1251 (не UTF-8) из-за cmd.
 - versionCode 2, versionName 0.2.0.
 
 **Проверки**
