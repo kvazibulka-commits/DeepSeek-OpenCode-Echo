@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -17,10 +16,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
@@ -30,6 +26,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -43,17 +40,17 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
-import androidx.compose.runtime.rememberCoroutineScope
 import ru.echo.radar.data.repository.EchoRepository
 import ru.echo.radar.data.settings.EchoSettingsStore
 import ru.echo.radar.media.NotificationAccess
 import ru.echo.radar.ui.components.EchoActionRow
 import ru.echo.radar.ui.components.EchoChip
+import ru.echo.radar.ui.components.EchoExpressiveHeader
+import ru.echo.radar.ui.components.EchoPillButton
 import ru.echo.radar.ui.components.EchoQuote
-import ru.echo.radar.ui.components.EchoScreenHeader
 import ru.echo.radar.ui.components.EchoSheetTitle
 import ru.echo.radar.ui.components.EchoStatusLine
-import ru.echo.radar.ui.components.EchoVinyl
+import ru.echo.radar.ui.components.EchoVinylHero
 import ru.echo.radar.ui.theme.EchoColors
 
 @Composable
@@ -80,10 +77,11 @@ fun DeckScreen(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(bottom = 20.dp),
+            .padding(bottom = 24.dp),
     ) {
-        EchoScreenHeader(
-            title = "ДЕКА",
+        EchoExpressiveHeader(
+            eyebrow = "Дека · 33⅓",
+            title = "Дека",
             subtitle = if (track.isKnown) "Сейчас на игле" else "Игла ждёт трек",
             onOpenSettings = onOpenSettings,
         )
@@ -92,28 +90,22 @@ fun DeckScreen(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 6.dp),
-            contentAlignment = Alignment.Center,
+                .padding(horizontal = 18.dp, vertical = 8.dp),
         ) {
-            EchoVinyl(
+            EchoVinylHero(
                 labelColorHex = snapshot.myEcho.colorHex,
                 coverUrl = null,
                 isKnown = track.isKnown,
-                modifier = Modifier
-                    .fillMaxWidth(0.72f)
-                    .aspectRatio(1f),
+                topChip = "33⅓ · живой винил",
+                bottomChip = track.sourceApp.ifBlank { "игла ждёт" },
             )
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
         Text(
             text = track.displayTitle,
-            style = MaterialTheme.typography.titleLarge.copy(
-                letterSpacing = 0.sp,
-                fontSize = 19.sp,
-                lineHeight = 24.sp,
-            ),
+            style = MaterialTheme.typography.headlineMedium,
             color = EchoColors.TextPrimary,
             textAlign = TextAlign.Center,
             maxLines = 2,
@@ -122,7 +114,7 @@ fun DeckScreen(
                 .fillMaxWidth()
                 .padding(horizontal = 22.dp),
         )
-        Spacer(modifier = Modifier.height(4.dp))
+        Spacer(modifier = Modifier.height(5.dp))
         Text(
             text = track.displayArtist,
             style = MaterialTheme.typography.titleMedium,
@@ -134,30 +126,25 @@ fun DeckScreen(
                 .fillMaxWidth()
                 .padding(horizontal = 22.dp),
         )
-        Spacer(modifier = Modifier.height(6.dp))
+
+        Spacer(modifier = Modifier.height(10.dp))
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.Center,
         ) {
-            EchoChip(track.sourceApp.ifBlank { "Системный перехват Android" })
-            Spacer(modifier = Modifier.padding(horizontal = 3.dp))
             EchoChip(config.zoneName)
-        }
-
-        if (snapshot.myEcho.moodLabel.isNotBlank()) {
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.Center,
-            ) {
+            Spacer(modifier = Modifier.padding(horizontal = 3.dp))
+            if (snapshot.myEcho.moodLabel.isNotBlank()) {
                 EchoChip(snapshot.myEcho.moodLabel, Color(snapshot.myEcho.colorHex))
+            } else {
+                EchoChip(track.sourceApp.ifBlank { "Системный перехват Android" })
             }
         }
 
         if (snapshot.myEcho.personaTitle.isNotBlank()) {
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(14.dp))
             DeckCard {
-                EchoSheetTitle("АРХЕТИП ВЕЧЕРА")
+                EchoSheetTitle("Архетип вечера")
                 Spacer(modifier = Modifier.height(5.dp))
                 Text(
                     text = snapshot.myEcho.personaTitle,
@@ -228,28 +215,42 @@ fun DeckScreen(
                 )
                 Spacer(modifier = Modifier.height(12.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Button(
+                    EchoPillButton(
+                        label = "РАЗРЕШИТЬ ДОСТУП",
                         onClick = { NotificationAccess.openSettings(context) },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = EchoColors.SignalCyan,
-                            contentColor = Color.Black,
-                        ),
-                    ) {
-                        Text("РАЗРЕШИТЬ ДОСТУП", style = MaterialTheme.typography.labelSmall)
-                    }
-                    OutlinedButton(onClick = { showManualDialog = true }) {
-                        Text("ВРУЧНУЮ", style = MaterialTheme.typography.labelSmall, color = EchoColors.SkyBlue)
-                    }
+                        modifier = Modifier.weight(1.6f),
+                    )
+                    EchoPillButton(
+                        label = "ВРУЧНУЮ",
+                        onClick = { showManualDialog = true },
+                        modifier = Modifier.weight(1f),
+                        primary = false,
+                    )
                 }
             }
         } else {
             DeckCard {
-                EchoSheetTitle("ДЕЙСТВИЯ")
-                Spacer(modifier = Modifier.height(10.dp))
+                EchoSheetTitle("Действия")
+                Spacer(modifier = Modifier.height(12.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    EchoPillButton(
+                        label = "ВОЛНА В ЭФИР",
+                        onClick = { repository.sendWave("broadcast") },
+                        modifier = Modifier.weight(1.6f),
+                    )
+                    EchoPillButton(
+                        label = "ТЕПЛО",
+                        onClick = { repository.sendWarmth("broadcast", 0.5f, 0.5f) },
+                        modifier = Modifier.weight(1f),
+                        primary = false,
+                    )
+                }
+                Spacer(modifier = Modifier.height(8.dp))
                 EchoActionRow(
                     actions = listOf(
-                        "Волна в эфир" to { repository.sendWave("broadcast") },
-                        "Тепло" to { repository.sendWarmth("broadcast", 0.5f, 0.5f) },
                         "Вручную" to { showManualDialog = true },
                         "Обновить" to { repository.refreshNow() },
                     ),
@@ -275,9 +276,9 @@ private fun DeckCard(content: @Composable ColumnScope.() -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 18.dp, vertical = 4.dp)
-            .background(EchoColors.Surface, RoundedCornerShape(16.dp))
-            .border(1.dp, EchoColors.Line, RoundedCornerShape(16.dp))
-            .padding(14.dp),
+            .background(EchoColors.SurfaceTonal, RoundedCornerShape(22.dp))
+            .border(1.dp, EchoColors.Line, RoundedCornerShape(22.dp))
+            .padding(15.dp),
         content = content,
     )
 }

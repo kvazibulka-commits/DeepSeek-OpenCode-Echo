@@ -34,9 +34,11 @@ import ru.echo.radar.ui.components.EchoCapsuleSheet
 import ru.echo.radar.ui.components.EchoChoiceChip
 import ru.echo.radar.ui.components.EchoDropCapsuleSheet
 import ru.echo.radar.ui.components.EchoEmptyState
-import ru.echo.radar.ui.components.EchoScreenHeader
+import ru.echo.radar.ui.components.EchoExpressiveHeader
+import ru.echo.radar.ui.components.EchoMetric
 import ru.echo.radar.ui.components.EchoSectionLabel
 import ru.echo.radar.ui.components.EchoStatusLine
+import ru.echo.radar.ui.components.pluralRu
 import ru.echo.radar.ui.theme.EchoColors
 
 @Composable
@@ -55,10 +57,16 @@ fun CachesScreen(repository: EchoRepository, onOpenSettings: () -> Unit) {
         contentPadding = PaddingValues(bottom = 18.dp),
     ) {
         item {
-            EchoScreenHeader(
-                title = "ТАЙНИКИ",
-                subtitle = "Музыкальные капсулы в тумане кварталов",
+            EchoExpressiveHeader(
+                eyebrow = "Туман · $radius м",
+                title = "Тайники",
+                subtitle = "Музыкальные капсулы кварталов",
                 onOpenSettings = onOpenSettings,
+            )
+            EchoMetric(
+                value = visibleCapsules.size.toString(),
+                caption = "${visibleCapsules.size} ${pluralRu(visibleCapsules.size, "капсула", "капсулы", "капсул")} в радиусе $radius м",
+                color = EchoColors.Amber,
             )
             EchoStatusLine(connection = snapshot.connection, totalObjects = snapshot.totalObjects)
         }

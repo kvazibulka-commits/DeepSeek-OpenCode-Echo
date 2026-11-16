@@ -130,14 +130,42 @@ fun EchoSignalSheet(
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            EchoActionRow(
-                actions = listOf(
-                    "Волна" to onWave,
-                    "Игла" to onNeedle,
-                    "Отклик" to onReact,
-                    "Тепло" to onWarmth,
-                ),
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                EchoPillButton(
+                    label = "ВОЛНА",
+                    onClick = onWave,
+                    modifier = Modifier.weight(1.6f),
+                )
+                EchoPillButton(
+                    label = "ИГЛА",
+                    onClick = onNeedle,
+                    modifier = Modifier.weight(1f),
+                    primary = false,
+                )
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                EchoPillButton(
+                    label = "ОТКЛИК ✦",
+                    onClick = onReact,
+                    modifier = Modifier.weight(1f),
+                    primary = false,
+                )
+                EchoPillButton(
+                    label = "ТЕПЛО",
+                    onClick = onWarmth,
+                    modifier = Modifier.weight(1f),
+                    primary = false,
+                )
+            }
         }
     }
 }

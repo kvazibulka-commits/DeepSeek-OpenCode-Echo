@@ -10,6 +10,7 @@ object EchoColors {
     val Background = Color(0xFF07090E)
     val Surface = Color(0xFF0D121B)
     val SurfaceElevated = Color(0xFF151E2A)
+    val SurfaceTonal = Color(0xFF121826)
     val Line = Color(0xFF1E293B)
     val LineStrong = Color(0xFF334155)
 

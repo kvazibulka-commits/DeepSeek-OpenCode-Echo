@@ -17,8 +17,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -385,24 +383,12 @@ fun EchoDropCapsuleSheet(
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            Button(
-                onClick = {
-                    onDrop(artist, title, message, isVenue, venueName, minResonance, perk)
-                },
-                enabled = canDrop,
+            EchoPillButton(
+                label = "СПРЯТАТЬ ТАЙНИК",
+                onClick = { onDrop(artist, title, message, isVenue, venueName, minResonance, perk) },
                 modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = EchoColors.SignalCyan,
-                    contentColor = Color.Black,
-                    disabledContainerColor = EchoColors.Line,
-                    disabledContentColor = EchoColors.TextDim,
-                ),
-            ) {
-                Text(
-                    text = "СПРЯТАТЬ ТАЙНИК",
-                    style = MaterialTheme.typography.labelMedium,
-                )
-            }
+                enabled = canDrop,
+            )
         }
     }
 }

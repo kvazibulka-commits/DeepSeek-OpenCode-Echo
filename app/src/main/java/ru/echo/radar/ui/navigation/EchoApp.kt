@@ -4,25 +4,17 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.material3.Icon
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
@@ -34,6 +26,7 @@ import kotlinx.coroutines.flow.collect
 import ru.echo.radar.data.repository.EchoRepository
 import ru.echo.radar.data.settings.EchoSettingsStore
 import ru.echo.radar.ui.components.EchoIncomingBanner
+import ru.echo.radar.ui.components.EchoPillNav
 import ru.echo.radar.ui.screens.AirScreen
 import ru.echo.radar.ui.screens.CachesScreen
 import ru.echo.radar.ui.screens.DeckScreen
@@ -81,7 +74,7 @@ fun EchoApp(
             snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
             bottomBar = {
                 if (currentRoute != SettingsRoute) {
-                    EchoBottomBar(
+                    EchoPillNav(
                         currentRoute = currentRoute,
                         onSelect = { tab ->
                             navController.navigate(tab.route) {
@@ -143,44 +136,5 @@ fun EchoApp(
                 .align(Alignment.TopCenter)
                 .statusBarsPadding(),
         )
-    }
-}
-
-@Composable
-private fun EchoBottomBar(
-    currentRoute: String?,
-    onSelect: (EchoTab) -> Unit,
-) {
-    NavigationBar(
-        containerColor = EchoColors.Surface,
-        tonalElevation = 0.dp,
-    ) {
-        EchoTab.entries.forEach { tab ->
-            NavigationBarItem(
-                selected = currentRoute == tab.route,
-                onClick = { onSelect(tab) },
-                icon = {
-                    Icon(
-                        imageVector = tab.icon,
-                        contentDescription = tab.label,
-                        modifier = Modifier.size(21.dp),
-                    )
-                },
-                label = {
-                    Text(
-                        text = tab.label,
-                        fontSize = 9.sp,
-                        letterSpacing = 0.8.sp,
-                    )
-                },
-                colors = NavigationBarItemDefaults.colors(
-                    selectedIconColor = EchoColors.SignalCyan,
-                    selectedTextColor = EchoColors.SignalCyan,
-                    indicatorColor = EchoColors.SignalCyan.copy(alpha = 0.12f),
-                    unselectedIconColor = EchoColors.TextDim,
-                    unselectedTextColor = EchoColors.TextDim,
-                ),
-            )
-        }
     }
 }

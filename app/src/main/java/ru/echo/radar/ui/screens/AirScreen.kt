@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -25,6 +26,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -40,45 +42,67 @@ import ru.echo.radar.domain.model.EchoZone
 import ru.echo.radar.ui.components.EchoCapsuleRow
 import ru.echo.radar.ui.components.EchoCapsuleSheet
 import ru.echo.radar.ui.components.EchoEmptyState
-import ru.echo.radar.ui.components.EchoScreenHeader
+import ru.echo.radar.ui.components.EchoExpressiveHeader
+import ru.echo.radar.ui.components.EchoHeroSonarCard
+import ru.echo.radar.ui.components.EchoMetric
 import ru.echo.radar.ui.components.EchoSectionLabel
-import ru.echo.radar.ui.components.EchoSignalCard
+import ru.echo.radar.ui.components.EchoSegmentedControl
+import ru.echo.radar.ui.components.EchoSignalRow
 import ru.echo.radar.ui.components.EchoSignalSheet
-import ru.echo.radar.ui.components.EchoSonar
 import ru.echo.radar.ui.components.EchoStatusLine
-import ru.echo.radar.ui.components.formatDistance
+import ru.echo.radar.ui.components.pluralRu
 import ru.echo.radar.ui.theme.EchoColors
 
 @Composable
 fun AirScreen(repository: EchoRepository, onOpenSettings: () -> Unit) {
     val snapshot by repository.snapshot.collectAsStateWithLifecycle()
+    val config by repository.config.collectAsStateWithLifecycle()
+
     var selectedSignal by remember { mutableStateOf<EchoSignal?>(null) }
     var selectedCapsule by remember { mutableStateOf<EchoCapsule?>(null) }
+    var mode by rememberSaveable { mutableStateOf(0) }
+
+    val topResonance = snapshot.signals.maxOfOrNull { it.compatibility } ?: 0
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(bottom = 18.dp),
     ) {
         item {
-            EchoScreenHeader(
-                title = "ЭФИР",
-                subtitle = "Сонар музыкального присутствия",
+            EchoExpressiveHeader(
+                eyebrow = "Сонар · ${config.zoneName}",
+                title = "Эфир",
+                subtitle = "Музыка, которая живёт вокруг",
                 onOpenSettings = onOpenSettings,
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            EchoMetric(
+                value = snapshot.signals.size.toString(),
+                caption = if (topResonance > 0) {
+                    "${snapshot.signals.size} ${pluralRu(snapshot.signals.size, "голос", "голоса", "голосов")} рядом · резонанс до $topResonance%"
+                } else {
+                    "сонар слушает тишину"
+                },
             )
             EchoStatusLine(
                 connection = snapshot.connection,
                 totalObjects = snapshot.totalObjects,
             )
+            Spacer(modifier = Modifier.height(10.dp))
         }
 
         item {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 6.dp, vertical = 4.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                EchoSonar(
+            EchoSegmentedControl(
+                options = listOf("СОНАР", "ТАЙНИКИ"),
+                selectedIndex = mode,
+                onSelect = { mode = it },
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+        }
+
+        if (mode == 0) {
+            item {
+                EchoHeroSonarCard(
                     signals = snapshot.signals,
                     capsules = snapshot.capsules,
                     thermalPatches = snapshot.thermalPatches,
@@ -86,43 +110,50 @@ fun AirScreen(repository: EchoRepository, onOpenSettings: () -> Unit) {
                     syncedTargets = snapshot.syncedTargets,
                     myColorHex = snapshot.myEcho.colorHex,
                     isDawn = snapshot.isDawn,
+                    zoneCount = snapshot.zones.size,
                     onSignalClick = { selectedSignal = it },
                 )
             }
-        }
 
-        item {
-            SonarLegend(
-                signalCount = snapshot.signals.size,
-                capsuleCount = snapshot.capsules.size,
-                hasLagrange = snapshot.lagrange != null,
-                isDawn = snapshot.isDawn,
-            )
-        }
-
-        if (snapshot.zones.isNotEmpty()) {
-            item { ZoneStrip(snapshot.zones) }
-        }
-
-        item { EchoSectionLabel("СИГНАЛЫ РЯДОМ") }
-
-        if (snapshot.signals.isEmpty()) {
             item {
-                EchoEmptyState(
-                    title = "В эфире тихо",
-                    body = "Включите музыку на телефоне — и город ответит волной. Пока сонар слышит только тишину.",
-                )
+                Spacer(modifier = Modifier.height(10.dp))
+                EchoSectionLabel("Рядом · ${snapshot.signals.size}")
+            }
+
+            if (snapshot.signals.isEmpty()) {
+                item {
+                    EchoEmptyState(
+                        title = "В эфире тихо",
+                        body = "Включите музыку на телефоне — и город ответит волной. Пока сонар слышит только тишину.",
+                    )
+                }
+            } else {
+                itemsIndexed(snapshot.signals, key = { _, signal -> signal.id }) { index, signal ->
+                    EchoSignalRow(
+                        signal = signal,
+                        index = index,
+                        onClick = { selectedSignal = signal },
+                    )
+                }
+            }
+
+            if (snapshot.zones.isNotEmpty()) {
+                item { ZoneStrip(snapshot.zones) }
             }
         } else {
-            items(snapshot.signals, key = { it.id }) { signal ->
-                EchoSignalCard(signal = signal, onClick = { selectedSignal = signal })
-            }
-        }
+            item { EchoSectionLabel("Тайники в эфире · ${snapshot.capsules.size}") }
 
-        if (snapshot.capsules.isNotEmpty()) {
-            item { EchoSectionLabel("ТАЙНИКИ В ЭФИРЕ") }
-            items(snapshot.capsules, key = { it.id }) { capsule ->
-                EchoCapsuleRow(capsule = capsule, onClick = { selectedCapsule = capsule })
+            if (snapshot.capsules.isEmpty()) {
+                item {
+                    EchoEmptyState(
+                        title = "Тайников пока нет",
+                        body = "Спрячьте первый трек с посланием — или дождитесь, пока кто-то оставит капсулу в вашем квартале.",
+                    )
+                }
+            } else {
+                items(snapshot.capsules, key = { it.id }) { capsule ->
+                    EchoCapsuleRow(capsule = capsule, onClick = { selectedCapsule = capsule })
+                }
             }
         }
     }
@@ -156,51 +187,9 @@ fun AirScreen(repository: EchoRepository, onOpenSettings: () -> Unit) {
 }
 
 @Composable
-private fun SonarLegend(
-    signalCount: Int,
-    capsuleCount: Int,
-    hasLagrange: Boolean,
-    isDawn: Boolean,
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 18.dp, vertical = 2.dp),
-        horizontalArrangement = Arrangement.spacedBy(14.dp),
-    ) {
-        LegendItem(label = "СИГНАЛЫ $signalCount", color = EchoColors.SkyBlue)
-        LegendItem(label = "ТАЙНИКИ $capsuleCount", color = EchoColors.Amber)
-        if (hasLagrange) {
-            LegendItem(label = "ТОЧКА ЛАГРАНЖА", color = EchoColors.Gold)
-        }
-        if (isDawn) {
-            LegendItem(label = "ШУМ РАССВЕТА", color = EchoColors.Gold)
-        }
-    }
-}
-
-@Composable
-private fun LegendItem(label: String, color: Color) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Box(
-            modifier = Modifier
-                .size(5.dp)
-                .background(color, CircleShape),
-        )
-        Spacer(modifier = Modifier.size(5.dp))
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.5.sp),
-            color = EchoColors.TextDim,
-            maxLines = 1,
-        )
-    }
-}
-
-@Composable
 private fun ZoneStrip(zones: List<EchoZone>) {
-    Column {
-        EchoSectionLabel("КВАРТАЛЫ")
+    Column(modifier = Modifier.padding(top = 10.dp)) {
+        EchoSectionLabel("Кварталы")
         Row(
             modifier = Modifier
                 .horizontalScroll(rememberScrollState())
@@ -210,9 +199,9 @@ private fun ZoneStrip(zones: List<EchoZone>) {
             zones.forEach { zone ->
                 Row(
                     modifier = Modifier
-                        .background(EchoColors.Surface, RoundedCornerShape(12.dp))
-                        .border(1.dp, EchoColors.Line, RoundedCornerShape(12.dp))
-                        .padding(horizontal = 10.dp, vertical = 8.dp),
+                        .background(EchoColors.SurfaceTonal, RoundedCornerShape(14.dp))
+                        .border(1.dp, EchoColors.Line, RoundedCornerShape(14.dp))
+                        .padding(horizontal = 11.dp, vertical = 9.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Box(
@@ -239,15 +228,5 @@ private fun ZoneStrip(zones: List<EchoZone>) {
                 }
             }
         }
-        Spacer(modifier = Modifier.height(4.dp))
     }
-}
-
-@Composable
-private fun DistanceHint(distance: Int) {
-    Text(
-        text = formatDistance(distance),
-        style = MaterialTheme.typography.labelSmall,
-        color = EchoColors.TextDim,
-    )
 }

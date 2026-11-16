@@ -28,7 +28,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ru.echo.radar.data.repository.EchoRepository
 import ru.echo.radar.domain.model.EchoReaction
 import ru.echo.radar.ui.components.EchoEmptyState
-import ru.echo.radar.ui.components.EchoScreenHeader
+import ru.echo.radar.ui.components.EchoExpressiveHeader
+import ru.echo.radar.ui.components.EchoMetric
 import ru.echo.radar.ui.components.EchoSectionLabel
 import ru.echo.radar.ui.components.EchoStatusLine
 import ru.echo.radar.ui.components.formatAgo
@@ -43,10 +44,16 @@ fun EchoesScreen(repository: EchoRepository, onOpenSettings: () -> Unit) {
         contentPadding = PaddingValues(bottom = 18.dp),
     ) {
         item {
-            EchoScreenHeader(
-                title = "ОТЗВУКИ",
+            EchoExpressiveHeader(
+                eyebrow = "Вечер · летопись",
+                title = "Отзвуки",
                 subtitle = "Следы вечера и чужие волны",
                 onOpenSettings = onOpenSettings,
+            )
+            EchoMetric(
+                value = snapshot.reactions.size.toString(),
+                caption = "откликов за вечер",
+                color = EchoColors.Gold,
             )
             EchoStatusLine(connection = snapshot.connection, totalObjects = snapshot.totalObjects)
         }

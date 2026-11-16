@@ -9,7 +9,6 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -61,7 +60,6 @@ fun EchoSonar(
 
     Canvas(
         modifier = modifier
-            .fillMaxWidth()
             .aspectRatio(1f)
             .pointerInput(signals) {
                 detectTapGestures { tap ->
