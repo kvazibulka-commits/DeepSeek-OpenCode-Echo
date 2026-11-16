@@ -14,6 +14,12 @@ local.properties
 *.db
 *.log
 build-log.txt
+__pycache__/
+*.pyc
 .playwright-mcp/
 echo.defaults.properties
+server/echo_config.json
+server/echo_memory.db
+server/echo_memory.db-wal
+server/echo_memory.db-shm
 /toolchain
