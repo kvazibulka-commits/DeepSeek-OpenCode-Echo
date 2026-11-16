@@ -275,6 +275,17 @@ fun SettingsScreen(
             )
         }
 
+        snapshot.lastError?.let { detail ->
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(
+                text = "Последняя ошибка: $detail",
+                style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                color = EchoColors.Danger,
+                maxLines = 3,
+                modifier = Modifier.padding(horizontal = 18.dp),
+            )
+        }
+
         Spacer(modifier = Modifier.height(10.dp))
 
         OutlinedButton(

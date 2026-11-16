@@ -135,6 +135,7 @@ data class EchoSnapshot(
     val thermalPatches: List<ThermalPatch> = emptyList(),
     val syncedTargets: Set<String> = emptySet(),
     val isDawn: Boolean = false,
+    val lastError: String? = null,
 ) {
     val totalObjects: Int get() = signals.size + capsules.size
 }

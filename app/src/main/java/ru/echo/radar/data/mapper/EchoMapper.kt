@@ -97,7 +97,7 @@ object EchoMapper {
         venueName = venueName,
         minResonance = minResonance,
         secretPerk = secretPerk,
-        createdAt = createdAt,
+        createdAt = createdAt.toLong(),
     )
 
     private fun ZoneDto.toDomain(): EchoZone = EchoZone(

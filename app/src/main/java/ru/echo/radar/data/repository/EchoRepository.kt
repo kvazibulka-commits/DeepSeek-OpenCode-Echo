@@ -279,6 +279,7 @@ class EchoRepository(
                     val base = EchoUrl.normalizeHost(settings.host)
                     val mapped = EchoMapper.toSnapshot(result.value, base, _snapshot.value)
                     _snapshot.value = applyIncomingBanner(mapped, result.value.incomingBanner)
+                        .copy(lastError = null)
                 }
                 is ApiResult.Failure -> registerFailure(result.error)
             }
@@ -299,7 +300,18 @@ class EchoRepository(
         } else {
             EchoConnection.Offline
         }
-        setConnection(connection)
+        _snapshot.value = _snapshot.value.copy(
+            connection = connection,
+            lastError = technicalMessage(error),
+        )
+    }
+
+    private fun technicalMessage(error: ApiError): String = when (error) {
+        is ApiError.Unauthorized -> "HTTP 401: токен не принят"
+        is ApiError.Http -> "HTTP ${error.code}"
+        is ApiError.Network -> "network: ${error.detail ?: "unknown"}"
+        is ApiError.Parse -> "parse: ${error.detail ?: "unknown"}"
+        is ApiError.Unexpected -> "error: ${error.detail ?: "unknown"}"
     }
 
     private fun setConnection(connection: EchoConnection) {

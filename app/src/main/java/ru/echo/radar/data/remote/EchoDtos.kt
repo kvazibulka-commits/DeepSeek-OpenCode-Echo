@@ -49,7 +49,7 @@ data class SignalDto(
     val colorHex: Long = 0xFF38BDF8L,
     val avatarPetals: Int = 6,
     val zoneName: String = "Вечерняя улица",
-    val updatedAt: Long = 0L,
+    val updatedAt: Double = 0.0,
     val isGhost: Boolean = false,
     val ageMinutes: Int = 0,
     val coverUrl: String? = null,
@@ -74,7 +74,7 @@ data class CapsuleDto(
     val venueName: String = "",
     val minResonance: Int = 0,
     val secretPerk: String = "",
-    val createdAt: Long = 0L,
+    val createdAt: Double = 0.0,
 )
 
 @Serializable
