@@ -25,6 +25,7 @@
 - Симуляция сигнала: `/api/state` видит `android_ci_test`, отдаёт
   `coverUrl=/api/cover/android_ci_test`, обложка отвечает `200 image/png`.
 - APK `echo-radar-0.3.0-debug.apk`, 10.8 МБ, versionCode 3.
+- Добавлено правило брандмауэра `Echo Radar Server 8080` (TCP 8080, все профили).
 
 **Проблемы**
 
