@@ -1,17 +1,33 @@
-"""Резонанс ЭХО: чистые функции без БД и сети.
+"""Резонанс ЭХО 2.0: артист, альбом, жанр + акустика.
 
-Формула из канона:
-    B = 0.15·K + 0.10·T + 0.25·W + 0.15·M + 0.35·E
-    R = 100 · [B + 0.25·(1 − B)·S]
-где K — Camelot, T — темп, W — фиксированный вес 0.84, M — валентность,
-E — энергия, S — культурный мост. Итог ограничен 58–99.
+Формула (все слагаемые нормированы в 0..1):
+
+    C = 0.36·Artist + 0.20·Album + 0.08·Title + 0.36·Genre
+    A = 0.30·Camelot + 0.15·Tempo + 0.30·Energy + 0.15·Mood + 0.10·Weight
+    R = 35 + 65·(0.60·C + 0.40·A),  затем clamp(58..99)
+
+Где:
+- Artist — сходство имён (нормализация, токены, триграммы, коллаборации);
+- Album — сходство альбомов (без изданий и ремастеров);
+- Title — сходство названий (ловит каверы и одноимённые треки);
+- Genre — близость жанровых семейств;
+- Weight — фиксированный 0.84 из канона;
+- энергия и настроение выводятся из жанра + детерминированного шума трека.
+
+Смысл: 35 — базовая тишина, 65 — вклад совпадения. Один и тот же трек
+даёт 99, тот же артист с тем же жанром — 80-90, только жанр — 58-68,
+разные миры — 58.
 """
 
 from __future__ import annotations
 
 import hashlib
 import math
+import re
+import unicodedata
 from dataclasses import dataclass
+
+DEFAULT_COLOR = 0xFF38BDF8
 
 GENRES = [
     "post-punk",
@@ -24,61 +40,198 @@ GENRES = [
     "lo-fi",
     "classical",
     "trip-hop",
+    "metal",
+    "folk",
 ]
 
-# Жанровые мосты: пары, которые звучат вместе неожиданно, но убедительно.
-BRIDGES = [
-    ("post-punk", "electronic"),
-    ("post-punk", "jazz"),
-    ("synthwave", "ambient"),
+# Жанровые семьи и мосты. Порядок важен: сначала более специфичные.
+SIBLINGS = {
+    ("post-punk", "synthwave"),
+    ("ambient", "electronic"),
+    ("jazz", "trip-hop"),
+    ("indie", "rock"),
+    ("lo-fi", "trip-hop"),
+    ("classical", "folk"),
+    ("metal", "rock"),
+    ("electronic", "synthwave"),
+    ("post-punk", "indie"),
+}
+
+BRIDGES = {
     ("ambient", "classical"),
-    ("indie", "lo-fi"),
-    ("trip-hop", "jazz"),
-    ("rock", "classical"),
-]
+    ("jazz", "lo-fi"),
+    ("rock", "folk"),
+    ("post-punk", "electronic"),
+    ("metal", "ambient"),
+    ("folk", "ambient"),
+}
+
+GENRE_KEYWORDS = {
+    "post-punk": (
+        "post-punk", "post punk", "coldwave", "sovietwave", "molchat", "молчат",
+        "кино", "joy division", "the cure", "bauhaus", "sisters of mercy",
+        "ploho", "плохо", "буерак", "buerak", "пошлая молли", "sad songs",
+        "sad songs", "nürnberg", "motorama", "человек-невидимка",
+    ),
+    "synthwave": (
+        "synthwave", "retrowave", "synth", "синти", "kavinsky", "perturbator",
+        "gunship", "timecop",
+    ),
+    "ambient": (
+        "ambient", "эмбиент", "drone", "brian eno", "eno", "stars of the lid",
+        "hammock", "ulver", "space",
+    ),
+    "electronic": (
+        "electronic", "techno", "idm", "autechre", "cortini", "aphex", "boards of canada",
+        "house", "garage", "burial", "rave",
+    ),
+    "indie": (
+        "indie", "radiohead", "arcade fire", "stereolab", "mitski", "phoebe bridgers",
+        "инди",
+    ),
+    "rock": (
+        "rock", "рок", "nirvana", "qotsa", "queens of the stone age", "soviet rock",
+        "guitar",
+    ),
+    "jazz": (
+        "jazz", "джаз", "miles davis", "coltrane", "nina simone", "bill evans",
+        "chet baker",
+    ),
+    "lo-fi": (
+        "lo-fi", "lofi", "lo fi", "nujabes", "lamp", "лоу-фай", "лоуфай",
+    ),
+    "classical": (
+        "classical", "классика", "bach", "debussy", "ravel", "satie", "piano",
+        "орган",
+    ),
+    "trip-hop": (
+        "trip-hop", "trip hop", "trip-hop", "massive attack", "portishead", "tricky",
+        "трип-хоп",
+    ),
+    "metal": (
+        "metal", "метал", "opeth", "alcest", "deafheaven", "black metal",
+    ),
+    "folk": (
+        "folk", "фолк", "heilung", "wardruna", "neofolk", "danheim", "skald",
+    ),
+}
+
+# Базовые акустические центры жанров: BPM, энергия, валентность, лад.
+GENRE_BASE = {
+    "post-punk": (128, 0.56, 0.36, "A"),
+    "synthwave": (110, 0.66, 0.56, "A"),
+    "ambient": (78, 0.28, 0.50, "B"),
+    "electronic": (124, 0.76, 0.50, "A"),
+    "indie": (118, 0.55, 0.60, "B"),
+    "rock": (132, 0.72, 0.55, "B"),
+    "jazz": (96, 0.45, 0.66, "B"),
+    "lo-fi": (84, 0.35, 0.56, "B"),
+    "classical": (70, 0.30, 0.62, "B"),
+    "trip-hop": (92, 0.44, 0.44, "A"),
+    "metal": (140, 0.86, 0.34, "A"),
+    "folk": (88, 0.34, 0.52, "B"),
+}
 
 
 def seed_int(*parts: str) -> int:
-    raw = "|".join(parts).lower().encode("utf-8")
+    raw = "|".join(part.lower() for part in parts).encode("utf-8")
     return int.from_bytes(hashlib.sha256(raw).digest()[:8], "big")
 
 
-@dataclass(frozen=True)
-class Acoustics:
-    bpm: int
-    camelot: str
-    genre: str
-    energy: float
-    valence: float
+def normalize(text: str) -> str:
+    value = unicodedata.normalize("NFKC", str(text or "")).casefold()
+    value = re.sub(r"\(.*?\)|\[.*?\]", " ", value)
+    value = re.sub(r"\b(feat|ft|featuring|при\s+уч|при\s+участии)\b.*$", " ", value)
+    value = re.sub(r"[^\w\s]", " ", value, flags=re.UNICODE)
+    return " ".join(value.split())
 
 
-def infer_acoustics(artist: str, title: str, album: str = "", mood: str = "") -> Acoustics:
-    probe = f"{artist} {title} {album} {mood}".lower()
-    seed = seed_int(artist, title, album)
+def _trigrams(text: str) -> set[str]:
+    if len(text) <= 3:
+        return {text} if text else set()
+    return {text[index:index + 3] for index in range(len(text) - 2)}
 
-    genre = GENRES[seed % len(GENRES)]
-    for candidate in GENRES:
-        if candidate in probe:
-            genre = candidate
-            break
-    if "пост" in probe or "post" in probe:
-        genre = "post-punk"
-    if "эмбиент" in probe or "ambient" in probe or "drone" in probe:
-        genre = "ambient"
 
-    bpm = 68 + (seed >> 7) % 96
-    key_number = 1 + (seed >> 13) % 12
-    key_letter = "A" if (seed >> 17) % 2 == 0 else "B"
+def _dice(left: str, right: str) -> float:
+    a = _trigrams(left)
+    b = _trigrams(right)
+    if not a or not b:
+        return 0.0
+    return 2.0 * len(a & b) / (len(a) + len(b))
 
-    energy = 0.35 + ((seed >> 19) % 60) / 100.0
-    valence = 0.30 + ((seed >> 23) % 65) / 100.0
-    return Acoustics(
-        bpm=bpm,
-        camelot=f"{key_number}{key_letter}",
-        genre=genre,
-        energy=round(min(0.98, energy), 2),
-        valence=round(min(0.98, valence), 2),
-    )
+
+def _jaccard(left: str, right: str) -> float:
+    a = set(left.split())
+    b = set(right.split())
+    if not a or not b:
+        return 0.0
+    return len(a & b) / len(a | b)
+
+
+def text_similarity(left: str, right: str) -> float:
+    a = normalize(left)
+    b = normalize(right)
+    if not a or not b:
+        return 0.0
+    if a == b:
+        return 1.0
+    if min(len(a), len(b)) >= 4 and (a in b or b in a):
+        return 0.85
+    score = max(_jaccard(a, b), _dice(a, b) * 0.92)
+    return score if score >= 0.45 else 0.0
+
+
+def artist_similarity(left: str, right: str) -> float:
+    a = normalize(left)
+    b = normalize(right)
+    if not a or not b:
+        return 0.0
+    if a == b:
+        return 1.0
+    separators = r"\s*(?:,|&|/|\band\b|\bx\b|\bvs\b|×|\+)\s*"
+    parts_a = [part for part in re.split(separators, a) if part]
+    parts_b = [part for part in re.split(separators, b) if part]
+    best = max((text_similarity(part_a, part_b) for part_a in parts_a for part_b in parts_b), default=0.0)
+    return max(best, text_similarity(a, b) * 0.95)
+
+
+def album_similarity(left: str, right: str) -> float:
+    def clean(value: str) -> str:
+        text = normalize(value)
+        text = re.sub(r"\b(deluxe|remaster(ed)?|edition|ep|single|version)\b", " ", text)
+        return " ".join(text.split())
+
+    if not normalize(left) or not normalize(right):
+        return 0.0
+    return max(text_similarity(clean(left), clean(right)), 0.0)
+
+
+def detect_genre(artist: str, title: str, album: str = "", mood: str = "") -> str:
+    probe = normalize(f"{artist} {title} {album} {mood}")
+    best_genre = ""
+    best_hits = 0
+    for genre, keywords in GENRE_KEYWORDS.items():
+        hits = sum(1 for keyword in keywords if keyword in probe)
+        if hits > best_hits:
+            best_hits = hits
+            best_genre = genre
+    if best_genre:
+        return best_genre
+    seed = seed_int(artist, title, album or "unknown")
+    return GENRES[seed % len(GENRES)]
+
+
+def genre_affinity(left: str, right: str) -> float:
+    if not left or not right:
+        return 0.0
+    if left == right:
+        return 1.0
+    pair = tuple(sorted((left, right)))
+    if pair in {tuple(sorted(item)) for item in SIBLINGS}:
+        return 0.72
+    if pair in {tuple(sorted(item)) for item in BRIDGES}:
+        return 0.50
+    return 0.15
 
 
 def parse_camelot(value: str) -> tuple[int, str] | None:
@@ -109,7 +262,6 @@ def camelot_score(first: str, second: str) -> float:
         if ring == 2:
             return 0.62
         return 0.30
-    # Относительные тональности: та же цифра, другая буква.
     if a[0] == b[0]:
         return 0.72
     if ring == 1:
@@ -121,7 +273,6 @@ def tempo_score(first: int, second: int) -> float:
     if first <= 0 or second <= 0:
         return 0.5
     ratio = second / first
-    # Октавы считаем одним и тем же темпом.
     while ratio < 0.8:
         ratio *= 2
     while ratio > 1.25:
@@ -130,37 +281,87 @@ def tempo_score(first: int, second: int) -> float:
     return max(0.0, min(1.0, 1.0 - diff / 0.28))
 
 
-def cultural_score(first: str, second: str) -> float:
-    if first == second:
-        return 0.95
-    pair = tuple(sorted((first, second)))
-    if pair in {tuple(sorted(item)) for item in BRIDGES}:
-        return 0.62
-    return 0.32
+@dataclass(frozen=True)
+class Acoustics:
+    bpm: int
+    camelot: str
+    genre: str
+    energy: float
+    valence: float
+    artist: str = ""
+    title: str = ""
+    album: str = ""
+
+
+def infer_acoustics(artist: str, title: str, album: str = "", mood: str = "") -> Acoustics:
+    genre = detect_genre(artist, title, album, mood)
+    base_bpm, base_energy, base_valence, base_key = GENRE_BASE.get(genre, (110, 0.55, 0.5, "B"))
+    seed = seed_int(artist, title, album or mood or genre)
+
+    bpm = max(55, min(170, base_bpm + (seed % 25) - 12))
+    key_number = 1 + (seed >> 10) % 12
+    key_letter = base_key if (seed >> 16) % 4 != 0 else ("B" if base_key == "A" else "A")
+    energy = max(0.10, min(0.98, base_energy + ((seed >> 20) % 17 - 8) / 100.0))
+    valence = max(0.10, min(0.98, base_valence + ((seed >> 24) % 21 - 10) / 100.0))
+
+    return Acoustics(
+        bpm=bpm,
+        camelot=f"{key_number}{key_letter}",
+        genre=genre,
+        energy=round(energy, 2),
+        valence=round(valence, 2),
+        artist=artist,
+        title=title,
+        album=album,
+    )
 
 
 def resonance(mine: Acoustics, other: Acoustics) -> tuple[int, str]:
-    k = camelot_score(mine.camelot, other.camelot)
-    t = tempo_score(mine.bpm, other.bpm)
-    w = 0.84
-    m = 1.0 - abs(mine.valence - other.valence)
-    e = 1.0 - abs(mine.energy - other.energy)
-    s = cultural_score(mine.genre, other.genre)
+    artist = artist_similarity(mine.artist, other.artist)
+    album = album_similarity(mine.album, other.album)
+    title = text_similarity(mine.title, other.title)
+    genre = genre_affinity(mine.genre, other.genre)
 
-    base = 0.15 * k + 0.10 * t + 0.25 * w + 0.15 * m + 0.35 * e
-    percent = round(100 * (base + 0.25 * (1 - base) * s))
+    camelot = camelot_score(mine.camelot, other.camelot)
+    tempo = tempo_score(mine.bpm, other.bpm)
+    energy = 1.0 - abs(mine.energy - other.energy)
+    mood = 1.0 - abs(mine.valence - other.valence)
+    weight = 0.84
+
+    cultural = 0.36 * artist + 0.20 * album + 0.08 * title + 0.36 * genre
+    acoustic = 0.30 * camelot + 0.15 * tempo + 0.30 * energy + 0.15 * mood + 0.10 * weight
+    percent = round(35 + 65 * (0.60 * cultural + 0.40 * acoustic))
     percent = max(58, min(99, percent))
 
-    if k >= 0.85 and t >= 0.8:
-        story = "Редкое созвучие Camelot и фазовый синхрон темпа."
-    elif s >= 0.6:
-        story = f"Культурный мост: {mine.genre} встречается с {other.genre}."
-    elif e >= 0.8:
-        story = "Совпадает плотность звука: обе волны дышат в одном темпе."
-    else:
-        story = "Тёплый вечерний резонанс: ваши звуковые траектории пересеклись в этой точке города."
+    same_track = (
+        normalize(mine.artist) == normalize(other.artist)
+        and normalize(mine.title) == normalize(other.title)
+    )
+    if same_track:
+        percent = max(percent, 96)
 
-    return percent, story
+    parts: list[str] = []
+    if same_track:
+        parts.append("Один и тот же трек — полное совпадение.")
+    else:
+        if artist >= 0.9:
+            parts.append(f"Тот же артист: {mine.artist}.")
+        elif album >= 0.9 and mine.album:
+            parts.append(f"Один альбом: {mine.album}.")
+        elif title >= 0.9:
+            parts.append(f"Похожее название: «{mine.title}».")
+        if genre >= 0.9:
+            parts.append(f"Один жанр: {mine.genre}.")
+        elif genre >= 0.5 and mine.genre and other.genre:
+            parts.append(f"Соседние жанры: {mine.genre} и {other.genre}.")
+        if camelot >= 0.8:
+            parts.append("Совпали тональности Camelot.")
+        if tempo >= 0.8:
+            parts.append("Темп совпал в пределах октавы.")
+        if not parts:
+            parts.append("Тёплый вечерний резонанс: траектории пересеклись в этой точке города.")
+
+    return percent, " ".join(parts[:2])
 
 
 def distance_label(meters: int) -> str:

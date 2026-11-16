@@ -17,6 +17,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
@@ -45,7 +47,6 @@ import ru.echo.radar.data.repository.EchoRepository
 import ru.echo.radar.data.settings.EchoSettingsStore
 import ru.echo.radar.domain.model.SavedTrack
 import ru.echo.radar.media.NotificationAccess
-import ru.echo.radar.ui.components.EchoActionRow
 import ru.echo.radar.ui.components.EchoAlbumSheet
 import ru.echo.radar.ui.components.EchoChip
 import ru.echo.radar.ui.components.EchoExpressiveHeader
@@ -78,6 +79,7 @@ fun DeckScreen(
 
     var showManualDialog by remember { mutableStateOf(false) }
     var showAlbum by remember { mutableStateOf(false) }
+    var deckMenuOpen by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -247,22 +249,43 @@ fun DeckScreen(
                     EchoPillButton(
                         label = "ВОЛНА В ЭФИР",
                         onClick = { repository.sendWave("broadcast") },
-                        modifier = Modifier.weight(1.6f),
+                        modifier = Modifier.weight(4f),
                     )
-                    EchoPillButton(
-                        label = "ТЕПЛО",
-                        onClick = { repository.sendWarmth("broadcast", 0.5f, 0.5f) },
-                        modifier = Modifier.weight(1f),
-                        primary = false,
-                    )
+                    Box(modifier = Modifier.weight(1f)) {
+                        EchoPillButton(
+                            label = "ЕЩЁ",
+                            onClick = { deckMenuOpen = true },
+                            primary = false,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                        DropdownMenu(
+                            expanded = deckMenuOpen,
+                            onDismissRequest = { deckMenuOpen = false },
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("Транслировать вручную") },
+                                onClick = {
+                                    deckMenuOpen = false
+                                    showManualDialog = true
+                                },
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Тёплое пятно") },
+                                onClick = {
+                                    deckMenuOpen = false
+                                    repository.sendWarmth("broadcast", 0.5f, 0.5f)
+                                },
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Обновить эфир") },
+                                onClick = {
+                                    deckMenuOpen = false
+                                    repository.refreshNow()
+                                },
+                            )
+                        }
+                    }
                 }
-                Spacer(modifier = Modifier.height(8.dp))
-                EchoActionRow(
-                    actions = listOf(
-                        "Вручную" to { showManualDialog = true },
-                        "Обновить" to { repository.refreshNow() },
-                    ),
-                )
             }
         }
     }

@@ -18,6 +18,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.input.pointer.pointerInput
@@ -47,6 +48,7 @@ fun EchoSonar(
     onSignalClick: (EchoSignal) -> Unit,
     modifier: Modifier = Modifier,
     zoom: Float = 1f,
+    beam: ResonanceBeam? = null,
 ) {
     val transition = rememberInfiniteTransition(label = "sonar")
     val sweep by transition.animateFloat(
@@ -209,6 +211,56 @@ fun EchoSonar(
             )
         }
 
+        beam?.let { pulse ->
+            val target = sonarPosition(pulse.angleDegrees, pulse.distanceRatio, center, maxR)
+            val progress = pulse.progress().coerceIn(0f, 1f)
+            if (progress > 0.01f) {
+                val tailProgress = (progress - 0.30f).coerceAtLeast(0f)
+                val head = Offset(
+                    center.x + (target.x - center.x) * progress,
+                    center.y + (target.y - center.y) * progress,
+                )
+                val tail = Offset(
+                    center.x + (target.x - center.x) * tailProgress,
+                    center.y + (target.y - center.y) * tailProgress,
+                )
+                drawLine(
+                    brush = Brush.linearGradient(
+                        colors = listOf(
+                            EchoColors.SignalCyan.copy(alpha = 0.10f),
+                            EchoColors.SignalCyan.copy(alpha = 0.75f),
+                            EchoColors.Gold,
+                        ),
+                        start = tail,
+                        end = head,
+                    ),
+                    start = tail,
+                    end = head,
+                    strokeWidth = 3.dp.toPx(),
+                    cap = StrokeCap.Round,
+                )
+                drawCircle(
+                    color = EchoColors.Gold.copy(alpha = 0.25f),
+                    radius = 9.dp.toPx(),
+                    center = head,
+                )
+                drawCircle(
+                    color = EchoColors.Gold,
+                    radius = 3.dp.toPx(),
+                    center = head,
+                )
+                if (progress > 0.70f) {
+                    val flare = ((progress - 0.70f) / 0.30f).coerceIn(0f, 1f)
+                    drawCircle(
+                        color = EchoColors.Gold.copy(alpha = (1f - flare) * 0.9f),
+                        radius = 10.dp.toPx() + flare * 18.dp.toPx(),
+                        center = target,
+                        style = Stroke(width = 1.5.dp.toPx()),
+                    )
+                }
+            }
+        }
+
         drawCircle(color = myColor.copy(alpha = 0.30f), radius = 11.dp.toPx(), center = center)
         drawCircle(color = myColor, radius = 3.5.dp.toPx(), center = center)
     }
@@ -227,3 +279,9 @@ private fun sonarPosition(
         center.y - (cos(radians) * radius).toFloat(),
     )
 }
+
+data class ResonanceBeam(
+    val angleDegrees: Float,
+    val distanceRatio: Float,
+    val progress: () -> Float,
+)

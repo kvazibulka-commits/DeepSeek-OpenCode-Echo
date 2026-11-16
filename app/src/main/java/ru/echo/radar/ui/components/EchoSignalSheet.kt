@@ -125,89 +125,102 @@ fun EchoSignalSheet(
 
             Spacer(modifier = Modifier.height(4.dp))
 
-            if (signal.coverUrl != null) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(EchoColors.Surface)
+                    .border(1.dp, EchoColors.Line, RoundedCornerShape(20.dp))
+                    .padding(12.dp),
+                verticalAlignment = Alignment.Top,
+            ) {
                 Box(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .height(196.dp)
-                        .clip(RoundedCornerShape(24.dp))
-                        .border(1.dp, EchoColors.Line, RoundedCornerShape(24.dp)),
-                ) {
-                    AsyncImage(
-                        model = signal.coverUrl,
-                        contentDescription = null,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize(),
-                    )
-                }
-            } else {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(164.dp)
-                        .clip(RoundedCornerShape(24.dp))
+                        .size(132.dp)
+                        .clip(RoundedCornerShape(16.dp))
                         .background(
                             Brush.linearGradient(
-                                listOf(accent.copy(alpha = 0.28f), EchoColors.Surface),
+                                listOf(accent.copy(alpha = 0.28f), EchoColors.SurfaceTonal),
                             ),
-                        )
-                        .border(1.dp, EchoColors.Line, RoundedCornerShape(24.dp)),
+                        ),
                     contentAlignment = Alignment.Center,
                 ) {
-                    EchoAvatar(
-                        petals = signal.avatarPetals,
-                        colorHex = signal.colorHex,
-                        size = 88.dp,
+                    if (signal.coverUrl != null) {
+                        AsyncImage(
+                            model = signal.coverUrl,
+                            contentDescription = null,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize(),
+                        )
+                    } else {
+                        EchoAvatar(
+                            petals = signal.avatarPetals,
+                            colorHex = signal.colorHex,
+                            size = 76.dp,
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.width(12.dp))
+
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = signal.personaTitle,
+                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.5.sp),
+                        color = accent,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = signal.title,
+                        style = MaterialTheme.typography.titleMedium.copy(fontSize = 16.sp),
+                        color = EchoColors.TextPrimary,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = signal.artist,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = EchoColors.SkyBlue,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = signal.album.ifBlank { "Альбом не передан" },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (signal.album.isBlank()) EchoColors.TextDim else EchoColors.TextSecondary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Spacer(modifier = Modifier.height(3.dp))
+                    Text(
+                        text = "${signal.sourceName} · ${formatDistance(signal.distanceMeters)}",
+                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.5.sp),
+                        color = EchoColors.TextDim,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
-            Text(
-                text = signal.personaTitle,
-                style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
-                color = accent,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = "${signal.artist} — ${signal.title}",
-                style = MaterialTheme.typography.headlineMedium,
-                color = EchoColors.TextPrimary,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = "${signal.sourceName} · ${formatDistance(signal.distanceMeters)}",
-                style = MaterialTheme.typography.bodySmall,
-                color = EchoColors.TextDim,
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = signal.album.ifBlank { "Альбом не передан" },
-                style = MaterialTheme.typography.bodySmall,
-                color = if (signal.album.isBlank()) EchoColors.TextDim else EchoColors.TextSecondary,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-
-            Spacer(modifier = Modifier.height(14.dp))
-
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 EchoChip("Резонанс ${signal.compatibility}%", accent)
-                EchoChip("${signal.bpm} BPM")
-                EchoChip(signal.camelotKey)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "совпадение с вашим треком",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = EchoColors.TextDim,
+                    maxLines = 1,
+                )
             }
 
             Spacer(modifier = Modifier.height(16.dp))
-            EchoSheetTitle("ЗВУКОВОЙ ПАСПОРТ")
+            EchoSheetTitle("О ТРЕКЕ")
             Spacer(modifier = Modifier.height(6.dp))
             Text(
                 text = "${signal.zoneName} · ${signal.moodLabel} · ${signal.genre}",
@@ -217,7 +230,7 @@ fun EchoSignalSheet(
 
             if (signal.resonanceStory.isNotBlank()) {
                 Spacer(modifier = Modifier.height(14.dp))
-                EchoSheetTitle("КУЛЬТУРНЫЙ МОСТ")
+                EchoSheetTitle("ПОЧЕМУ СОВПАЛО")
                 Spacer(modifier = Modifier.height(5.dp))
                 Text(
                     text = signal.resonanceStory,

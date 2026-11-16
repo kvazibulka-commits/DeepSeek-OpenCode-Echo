@@ -27,6 +27,8 @@ run-server.bat
 | `templates/dashboard.html` | новый пульт без emoji и legacy |
 | `tests/test_core.py` | юнит-тесты ядра |
 
+Точный алгоритм резонанса: `RESONANCE.md`.
+
 ## API
 
 Совместим с клиентом:

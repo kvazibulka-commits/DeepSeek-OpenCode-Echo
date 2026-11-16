@@ -33,6 +33,7 @@ import ru.echo.radar.ui.components.EchoSegmentedControl
 import ru.echo.radar.ui.components.EchoSignalRow
 import ru.echo.radar.ui.components.EchoStatusLine
 import ru.echo.radar.ui.components.EchoVinylHero
+import ru.echo.radar.ui.components.ResonanceBeam
 import ru.echo.radar.ui.components.pluralRu
 import ru.echo.radar.ui.theme.EchoColors
 import ru.echo.radar.ui.theme.EchoTheme
@@ -188,6 +189,13 @@ private fun AirPreview() {
                 isDawn = false,
                 zoneCount = demoZones.size,
                 onSignalClick = {},
+                zoom = 1f,
+                onZoom = {},
+                beam = ResonanceBeam(
+                    angleDegrees = 42f,
+                    distanceRatio = 0.63f,
+                    progress = { 0.72f },
+                ),
             )
             Spacer(modifier = Modifier.height(10.dp))
             EchoSectionLabel("Рядом · 3")

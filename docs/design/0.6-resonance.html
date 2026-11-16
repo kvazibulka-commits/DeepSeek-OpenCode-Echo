@@ -1,0 +1,296 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ЭХО · резонансный луч и разгрузка деки</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background:
+      radial-gradient(900px 520px at 12% -10%, rgba(56,189,248,.10), transparent 60%),
+      radial-gradient(760px 460px at 100% 0%, rgba(255,184,0,.06), transparent 55%),
+      #06070A;
+    color: #EDF1F5;
+    font-family: "Segoe UI", Roboto, system-ui, sans-serif;
+  }
+  .page { max-width: 1320px; margin: 0 auto; padding: 38px 24px 70px; }
+  .brand { font-size: 12px; letter-spacing: 4px; font-weight: 800; }
+  .brand span { color: #8A94A6; letter-spacing: 1px; font-weight: 500; }
+  h1 { margin: 12px 0 8px; font-size: clamp(28px, 3vw, 42px); letter-spacing: -.02em; }
+  .lede { max-width: 820px; color: #9AA4B2; font-size: 14px; line-height: 1.65; }
+  .tags { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 16px; }
+  .tags span { font-size: 10px; letter-spacing: .9px; text-transform: uppercase; border: 1px solid #1E293B; border-radius: 999px; padding: 5px 9px; color: #AEB8C8; }
+
+  .section { margin-top: 42px; border: 1px solid #1B2029; border-radius: 26px; padding: 24px; background: linear-gradient(180deg, rgba(255,255,255,.02), transparent); }
+  .section h2 { margin: 0 0 4px; font-size: 20px; }
+  .section .sub { margin: 0 0 18px; color: #8A94A6; font-size: 12.5px; }
+
+  .variants { display: flex; flex-wrap: wrap; gap: 26px; justify-content: center; }
+  .variant { flex: 1 1 330px; max-width: 390px; }
+  .variant h3 { margin: 0 0 4px; font-size: 15px; }
+  .variant .tag { font-size: 9px; letter-spacing: 1px; text-transform: uppercase; color: #8A94A6; }
+  .variant p { font-size: 11.5px; color: #8A94A6; line-height: 1.5; margin: 6px 0 10px; }
+
+  .phone { width: 360px; height: 720px; border-radius: 40px; background: #15171D; border: 1px solid #2A2E38; padding: 9px; box-shadow: 0 24px 60px rgba(0,0,0,.55); margin: 0 auto; }
+  .screen { width: 100%; height: 100%; border-radius: 33px; background: #07090E; overflow: hidden; display: flex; flex-direction: column; }
+  .status { display: flex; justify-content: space-between; padding: 12px 18px 4px; font-size: 10px; color: #6F7A8A; }
+  .head { padding: 4px 18px 0; }
+  .eyebrow { font-size: 8px; letter-spacing: 1.7px; color: #64748B; text-transform: uppercase; }
+  .head h4 { margin: 5px 0 0; font-size: 27px; letter-spacing: -.02em; }
+  .metric { display: flex; align-items: flex-end; gap: 7px; padding: 7px 18px 0; }
+  .metric b { font-size: 24px; color: #00F0FF; line-height: 1; }
+  .metric span { font-size: 9.5px; color: #85909E; padding-bottom: 2px; }
+  .sonar-wrap { margin: 8px 18px 0; border-radius: 26px; border: 1px solid #1E293B; background: linear-gradient(180deg, #121826, #0D121B); padding: 8px; }
+  .sonar { position: relative; width: 100%; aspect-ratio: 1; }
+  .sonar svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .legend { display: flex; gap: 12px; justify-content: center; padding: 6px 0 2px; font-size: 7.8px; letter-spacing: .7px; color: #64748B; }
+  .legend i { width: 4px; height: 4px; border-radius: 50%; display: inline-block; margin-right: 4px; }
+  .rows { padding: 8px 18px 0; }
+  .row { display: flex; align-items: baseline; gap: 8px; padding: 9px 0; border-top: 1px solid #1E293B; }
+  .row .n { font-size: 7.5px; color: #64748B; width: 14px; font-family: Consolas, monospace; }
+  .row .txt { flex: 1; min-width: 0; }
+  .row .who { font-size: 7.5px; letter-spacing: .7px; color: #38BDF8; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .row .what { margin-top: 1px; font-family: Georgia, serif; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .row .res { font-family: Consolas, monospace; font-size: 14px; color: #FFD700; }
+  .row .res small { display: block; font-size: 6.5px; color: #64748B; letter-spacing: .6px; text-align: right; }
+  .tabs { margin-top: auto; display: flex; justify-content: space-around; padding: 10px 8px 16px; border-top: 1px solid #121821; background: #0D121B; }
+  .tabs span { font-size: 7.5px; letter-spacing: .5px; color: #64748B; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+  .tabs span.on { color: #00F0FF; font-weight: 700; }
+  .tabs i { font-style: normal; font-size: 12px; }
+
+  /* svg motion */
+  .ring { fill: none; stroke: #1E293B; }
+  .ring.outer { stroke: rgba(0,240,255,.22); }
+  .cross { stroke: #1E293B; stroke-width: 1; }
+  .dot { fill: #38BDF8; }
+  .dot.g { fill: #A855F7; } .dot.a { fill: #FFB800; } .dot.e { fill: #34D399; }
+  .me { fill: #00F0FF; }
+  .me-ring { fill: none; stroke: rgba(0,240,255,.3); }
+  .beam { fill: none; stroke: url(#beamGrad); stroke-width: 3.2; stroke-linecap: round; filter: url(#glow); stroke-dasharray: 210; stroke-dashoffset: 210; animation: beam 2.4s ease-in-out infinite; }
+  .beam-tail { fill: none; stroke: rgba(255,215,0,.25); stroke-width: 1.4; stroke-dasharray: 4 6; stroke-dashoffset: 0; animation: tail 1.2s linear infinite; }
+  @keyframes beam { 0% { stroke-dashoffset: 210; opacity: 0; } 12% { opacity: 1; } 55% { stroke-dashoffset: 0; opacity: 1; } 80% { stroke-dashoffset: 0; opacity: .65; } 100% { stroke-dashoffset: 0; opacity: 0; } }
+  @keyframes tail { to { stroke-dashoffset: -40; } }
+  .flare { fill: none; stroke: #FFD700; stroke-width: 1.4; animation: flare 2.4s ease-out infinite; transform-origin: 214px 92px; }
+  @keyframes flare { 0%, 55% { transform: scale(.4); opacity: 0; } 62% { opacity: .9; } 90% { transform: scale(1.8); opacity: 0; } 100% { opacity: 0; } }
+  .pulse { fill: none; stroke: rgba(0,240,255,.45); animation: pulse 2.8s ease-out infinite; }
+  .pulse.b { animation-delay: .9s; }
+  @keyframes pulse { 0% { transform: scale(.2); opacity: .7; } 80% { transform: scale(1.15); opacity: 0; } 100% { opacity: 0; } }
+  .res-glow { fill: #FFD700; filter: url(#glow); animation: glowDot 2.4s ease-in-out infinite; }
+  @keyframes glowDot { 0%, 50% { opacity: .35; } 65% { opacity: .95; } 100% { opacity: .35; } }
+  .sweep { animation: rotate 8s linear infinite; transform-origin: 150px 150px; }
+  @keyframes rotate { to { transform: rotate(360deg); } }
+
+  .compare { margin-top: 26px; border: 1px solid #1B2029; border-radius: 22px; overflow: hidden; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th, td { text-align: left; padding: 11px 14px; border-bottom: 1px solid #1B2029; vertical-align: top; }
+  th { color: #8A94A6; font-size: 9px; letter-spacing: 1.2px; text-transform: uppercase; }
+  td:first-child { color: #8A94A6; width: 22%; }
+  tr:last-child td { border-bottom: none; }
+  .pick { color: #34D399; font-weight: 700; }
+
+  .deck-grid { display: flex; flex-wrap: wrap; gap: 18px; margin-top: 16px; }
+  .deck-card { flex: 1 1 300px; background: #0D121B; border: 1px solid #1E293B; border-radius: 20px; padding: 16px; }
+  .deck-card h4 { margin: 0 0 4px; font-size: 14px; }
+  .deck-card p { margin: 0 0 12px; font-size: 11px; color: #8A94A6; }
+  .actions-mock { background: #07090E; border: 1px solid #151E2A; border-radius: 16px; padding: 12px; }
+  .pill { height: 38px; border-radius: 999px; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 700; letter-spacing: .7px; }
+  .pill.primary { background: linear-gradient(90deg, #00F0FF, #38BDF8, #A855F7); color: #0B0E14; }
+  .pill.tonal { background: rgba(30,41,59,.45); border: 1px solid #334155; color: #38BDF8; }
+  .pill.icon { width: 38px; padding: 0; }
+  .action-row { display: flex; gap: 6px; margin-top: 7px; }
+  .action-row .pill { flex: 1; }
+  .action-row .pill.icon { flex: 0 0 38px; }
+  .menu-note { font-size: 9px; color: #64748B; margin-top: 8px; }
+
+  .final { margin-top: 34px; border: 1px solid rgba(0,240,255,.28); border-radius: 22px; padding: 20px; background: linear-gradient(150deg, rgba(0,240,255,.07), rgba(255,184,0,.05)); }
+  .final h2 { margin: 0 0 8px; font-size: 18px; }
+  .final p { margin: 0; color: #C3CBD8; font-size: 13px; line-height: 1.6; max-width: 900px; }
+  .picks { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+  .picks span { border: 1px solid #334155; border-radius: 999px; padding: 8px 12px; font-size: 11px; color: #E7EDF5; }
+  footer { margin-top: 30px; color: #66707E; font-size: 11px; }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="brand">ЭХО <span>· резонанс 0.6</span></div>
+  <h1>Луч созвучия и тихая дека</h1>
+  <p class="lede">Если ваш трек и трек на радаре совпадают по звучанию, сонар должен один раз ответить красивым импульсом. Ниже три механики луча и три способа разгрузить кнопки на ДЕКЕ.</p>
+  <div class="tags"><span>Canvas 30 fps</span><span>trigger ≥ 85%</span><span>once per signal</span><span>reduce motion</span><span>no server changes</span></div>
+
+  <section class="section">
+    <h2>Три варианта луча</h2>
+    <p class="sub">Один и тот же триггер: новый сигнал с резонансом ≥ 85 % или скачок с 84 → 85+. Призраки не участвуют. Не чаще одного луча в 10 секунд.</p>
+    <div class="variants">
+      <div class="variant">
+        <h3>A · Импульс к созвучию <span class="pick">рекомендую</span></h3>
+        <div class="tag">одноразовый · 1.4 с</div>
+        <p>Луч бежит от вашего маяка к конкретной точке: золотая голова, тонкий хвост, кольцо на цели. Сразу понятно, кто именно совпал.</p>
+        <div class="phone"><div class="screen">
+          <div class="status"><span>09:41</span><span>▮ ▮ ▮</span></div>
+          <div class="head"><div class="eyebrow">Сонар · Вечерняя улица</div><h4>Эфир</h4></div>
+          <div class="metric"><b>5</b><span>голосов рядом · резонанс до 91%</span></div>
+          <div class="sonar-wrap"><div class="sonar">
+            <svg viewBox="0 0 300 300">
+              <defs>
+                <linearGradient id="beamGrad" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0" stop-color="#00F0FF" stop-opacity="0.1"/>
+                  <stop offset=".55" stop-color="#7CF6FF" stop-opacity=".8"/>
+                  <stop offset="1" stop-color="#FFD700"/>
+                </linearGradient>
+                <filter id="glow"><feGaussianBlur stdDeviation="2.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+              </defs>
+              <circle class="ring" cx="150" cy="150" r="42"/><circle class="ring" cx="150" cy="150" r="70"/>
+              <circle class="ring" cx="150" cy="150" r="98"/><circle class="ring outer" cx="150" cy="150" r="126"/>
+              <line class="cross" x1="24" y1="150" x2="276" y2="150"/><line class="cross" x1="150" y1="24" x2="150" y2="276"/>
+              <circle class="dot" cx="214" cy="92" r="5"/>
+              <circle class="dot g" cx="104" cy="206" r="4.5"/>
+              <circle class="dot a" cx="98" cy="104" r="4"/>
+              <circle class="dot e" cx="206" cy="210" r="4.5"/>
+              <line class="beam" x1="150" y1="150" x2="214" y2="92"/>
+              <circle class="flare" cx="214" cy="92" r="10"/>
+              <circle class="me-ring" cx="150" cy="150" r="10"/>
+              <circle class="me" cx="150" cy="150" r="4"/>
+            </svg>
+          </div>
+          <div class="legend"><span><i style="background:#38BDF8"></i>СИГНАЛЫ 4</span><span><i style="background:#FFD700"></i>СОЗВУЧИЕ</span></div>
+          </div>
+          <div class="rows">
+            <div class="row"><span class="n">01</span><div class="txt"><div class="who">Хранитель северных лесов</div><div class="what">Sheewton — Somewhere In Earth</div></div><div class="res">91<small>РЕЗОНАНС</small></div></div>
+            <div class="row"><span class="n">02</span><div class="txt"><div class="who">Пилигрим неоновых панелек</div><div class="what">Молчат Дома — Судно</div></div><div class="res">74<small>РЕЗОНАНС</small></div></div>
+          </div>
+          <div class="tabs"><span class="on"><i>◉</i>ЭФИР</span><span><i>▷</i>ДЕКА</span><span><i>✦</i>ОТЗВУКИ</span><span><i>◇</i>ТАЙНИКИ</span></div>
+        </div></div>
+      </div>
+
+      <div class="variant">
+        <h3>B · Резонансная волна</h3>
+        <div class="tag">кольца · 1.8 с</div>
+        <p>От центра расходится золотое кольцо, все созвучные точки вспыхивают. Атмосферно, но не показывает направление.</p>
+        <div class="phone"><div class="screen">
+          <div class="status"><span>09:41</span><span>▮ ▮ ▮</span></div>
+          <div class="head"><div class="eyebrow">Сонар · Вечерняя улица</div><h4>Эфир</h4></div>
+          <div class="metric"><b>5</b><span>голосов рядом · резонанс до 91%</span></div>
+          <div class="sonar-wrap"><div class="sonar">
+            <svg viewBox="0 0 300 300">
+              <circle class="ring" cx="150" cy="150" r="42"/><circle class="ring" cx="150" cy="150" r="70"/>
+              <circle class="ring" cx="150" cy="150" r="98"/><circle class="ring outer" cx="150" cy="150" r="126"/>
+              <line class="cross" x1="24" y1="150" x2="276" y2="150"/><line class="cross" x1="150" y1="24" x2="150" y2="276"/>
+              <circle class="pulse" cx="150" cy="150" r="60" style="transform-origin:150px 150px"/>
+              <circle class="pulse b" cx="150" cy="150" r="95" style="transform-origin:150px 150px"/>
+              <circle class="dot" cx="214" cy="92" r="5"/><circle class="res-glow" cx="214" cy="92" r="11" opacity=".4"/>
+              <circle class="dot g" cx="104" cy="206" r="4.5"/><circle class="res-glow" cx="104" cy="206" r="9" opacity=".25"/>
+              <circle class="dot a" cx="98" cy="104" r="4"/>
+              <circle class="dot e" cx="206" cy="210" r="4.5"/>
+              <circle class="me-ring" cx="150" cy="150" r="10"/><circle class="me" cx="150" cy="150" r="4"/>
+            </svg>
+          </div>
+          <div class="legend"><span><i style="background:#38BDF8"></i>СИГНАЛЫ 4</span><span><i style="background:#FFD700"></i>ВОЛНА</span></div>
+          </div>
+          <div class="rows">
+            <div class="row"><span class="n">01</span><div class="txt"><div class="who">Хранитель северных лесов</div><div class="what">Sheewton — Somewhere In Earth</div></div><div class="res">91<small>РЕЗОНАНС</small></div></div>
+            <div class="row"><span class="n">02</span><div class="txt"><div class="who">Пилигрим неоновых панелек</div><div class="what">Молчат Дома — Судно</div></div><div class="res">74<small>РЕЗОНАНС</small></div></div>
+          </div>
+          <div class="tabs"><span class="on"><i>◉</i>ЭФИР</span><span><i>▷</i>ДЕКА</span><span><i>✦</i>ОТЗВУКИ</span><span><i>◇</i>ТАЙНИКИ</span></div>
+        </div></div>
+      </div>
+
+      <div class="variant">
+        <h3>C · Живой сектор</h3>
+        <div class="tag">постоянно · 8 с/оборот</div>
+        <p>Обычный луч сонара становится золотым, когда рядом есть созвучие, а точка вспыхивает в момент прохода. Тише всех, но легко не заметить.</p>
+        <div class="phone"><div class="screen">
+          <div class="status"><span>09:41</span><span>▮ ▮ ▮</span></div>
+          <div class="head"><div class="eyebrow">Сонар · Вечерняя улица</div><h4>Эфир</h4></div>
+          <div class="metric"><b>5</b><span>голосов рядом · резонанс до 91%</span></div>
+          <div class="sonar-wrap"><div class="sonar">
+            <svg viewBox="0 0 300 300">
+              <defs>
+                <radialGradient id="goldSweep"><stop offset="0" stop-color="#FFD700" stop-opacity="0"/><stop offset="1" stop-color="#FFD700" stop-opacity=".28"/></radialGradient>
+              </defs>
+              <circle class="ring" cx="150" cy="150" r="42"/><circle class="ring" cx="150" cy="150" r="70"/>
+              <circle class="ring" cx="150" cy="150" r="98"/><circle class="ring outer" cx="150" cy="150" r="126"/>
+              <line class="cross" x1="24" y1="150" x2="276" y2="150"/><line class="cross" x1="150" y1="24" x2="150" y2="276"/>
+              <g class="sweep"><path d="M150 150 L150 24 A126 126 0 0 1 238 62 Z" fill="url(#goldSweep)"/></g>
+              <circle class="dot" cx="214" cy="92" r="5"/><circle class="res-glow" cx="214" cy="92" r="10"/>
+              <circle class="dot g" cx="104" cy="206" r="4.5"/><circle class="dot a" cx="98" cy="104" r="4"/><circle class="dot e" cx="206" cy="210" r="4.5"/>
+              <circle class="me-ring" cx="150" cy="150" r="10"/><circle class="me" cx="150" cy="150" r="4"/>
+            </svg>
+          </div>
+          <div class="legend"><span><i style="background:#38BDF8"></i>СИГНАЛЫ 4</span><span><i style="background:#FFD700"></i>СЕКТОР</span></div>
+          </div>
+          <div class="rows">
+            <div class="row"><span class="n">01</span><div class="txt"><div class="who">Хранитель северных лесов</div><div class="what">Sheewton — Somewhere In Earth</div></div><div class="res">91<small>РЕЗОНАНС</small></div></div>
+            <div class="row"><span class="n">02</span><div class="txt"><div class="who">Пилигрим неоновых панелек</div><div class="what">Молчат Дома — Судно</div></div><div class="res">74<small>РЕЗОНАНС</small></div></div>
+          </div>
+          <div class="tabs"><span class="on"><i>◉</i>ЭФИР</span><span><i>▷</i>ДЕКА</span><span><i>✦</i>ОТЗВУКИ</span><span><i>◇</i>ТАЙНИКИ</span></div>
+        </div></div>
+      </div>
+    </div>
+
+    <div class="compare">
+      <table>
+        <tr><th>Критерий</th><th>A · Импульс</th><th>B · Волна</th><th>C · Сектор</th></tr>
+        <tr><td>Смысл</td><td>Показывает, кто именно совпал</td><td>Показывает, что совпадение есть</td><td>Держит фон «тёплым»</td></tr>
+        <tr><td>Частота</td><td>Один раз на сигнал, кулдаун 10 с</td><td>Один раз на новую волну</td><td>Постоянно</td></tr>
+        <tr><td>Нагрузка</td><td>Низкая: линия + кольцо</td><td>Средняя: кольца на весь canvas</td><td>Низкая: один сектор</td></tr>
+        <tr><td>Риск</td><td>Можно пропустить, если смотреть в список</td><td>Меньше связи с конкретной точкой</td><td>Привыкание, «ещё один эффект»</td></tr>
+        <tr><td>Код</td><td>Animatable + 2 фигуры</td><td>Animatable + кольца</td><td>Цвет sweep + flare</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2>Как это работает механически</h2>
+    <p class="sub">Без изменений сервера: резонанс уже приходит в каждом сигнале.</p>
+    <div class="variants">
+      <div class="deck-card"><h4>Триггер</h4><p>Новый сигнал с <b>compatibilityPercent ≥ 85</b> или рост с 84 до 85+. Призраки и сигналы без трека не участвуют.</p></div>
+      <div class="deck-card"><h4>Очередь</h4><p>Если совпали несколько — берём максимальный резонанс, затем ближайший. Кулдаун 10 секунд, чтобы не мигало.</p></div>
+      <div class="deck-card"><h4>Движение</h4><p>1.4 с, easing FastOutSlowIn. Голова луча золотая, хвост гаснет. На цели — кольцо 0.9 с.</p></div>
+      <div class="deck-card"><h4>Доступность</h4><p>При reduce motion — мягкое свечение точки без бегущей линии. Цвет не единственный признак: кольцо + подпись «созвучие».</p></div>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2>ДЕКА: разгружаем кнопки</h2>
+    <p class="sub">Сейчас четыре действия и карточка присутствия. Оставляем одно главное и прячем редкое в меню.</p>
+    <div class="deck-grid">
+      <div class="deck-card">
+        <h4>A · Одна кнопка + ⋯ <span class="pick">рекомендую</span></h4>
+        <p>Главное — «Волна в эфир». Ручная трансляция, тепло и обновление — в меню.</p>
+        <div class="actions-mock">
+          <div class="pill primary">ВОЛНА В ЭФИР</div>
+          <div class="action-row"><div class="pill tonal">⋯ ЕЩЁ</div></div>
+          <div class="menu-note">В меню: ручная трансляция · тёплое пятно · обновить</div>
+        </div>
+      </div>
+      <div class="deck-card">
+        <h4>B · Главная + две иконки</h4>
+        <p>Волна крупно; рядом «Вручную» и «Обновить» как глифы. Тепло — в меню.</p>
+        <div class="actions-mock">
+          <div class="pill primary">ВОЛНА В ЭФИР</div>
+          <div class="action-row"><div class="pill icon tonal">↗</div><div class="pill icon tonal">↻</div><div class="pill tonal">⋯</div></div>
+        </div>
+      </div>
+      <div class="deck-card">
+        <h4>C · Две равные кнопки</h4>
+        <p>«Волна» и «Поделиться». Остальное — в меню. Больше площади, но две главные.</p>
+        <div class="actions-mock">
+          <div class="action-row"><div class="pill primary">ВОЛНА</div><div class="pill tonal">ПОДЕЛИТЬСЯ</div></div>
+          <div class="menu-note">В меню: тепло · обновить · присутствие</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="final">
+    <h2>Рекомендация</h2>
+    <p><b>Луч:</b> вариант A «Импульс к созвучию» — он единственный объясняет, кто именно совпал, и не превращается в постоянный шум. Дополнительно можно чуть золотить обычный sweep (элемент C) фоном.<br><b>Дека:</b> вариант A — одна кнопка «Волна в эфир» и меню ⋯. Так экран перестаёт быть пультом управления и возвращается к винилу.</p>
+    <div class="picks"><span>Луч A</span><span>Луч B</span><span>Луч C</span><span>A + лёгкий золотой sweep</span><span>Дека A</span><span>Дека B</span><span>Дека C</span></div>
+  </section>
+
+  <footer>Файл: docs/design/0.6-resonance.html · механика использует существующий compatibilityPercent, сервер менять не нужно.</footer>
+</div>
+</body>
+</html>

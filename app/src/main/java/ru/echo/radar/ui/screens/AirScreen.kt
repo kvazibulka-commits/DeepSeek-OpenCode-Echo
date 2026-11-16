@@ -1,5 +1,8 @@
 package ru.echo.radar.ui.screens
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.horizontalScroll
@@ -22,9 +25,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -48,20 +53,75 @@ import ru.echo.radar.ui.components.EchoSectionLabel
 import ru.echo.radar.ui.components.EchoSignalRow
 import ru.echo.radar.ui.components.EchoSignalSheet
 import ru.echo.radar.ui.components.EchoStatusLine
+import ru.echo.radar.ui.components.ResonanceBeam
 import ru.echo.radar.ui.components.pluralRu
 import ru.echo.radar.ui.theme.EchoColors
+import kotlinx.coroutines.launch
+
+private const val RESONANCE_THRESHOLD = 85
+private const val BEAM_COOLDOWN_MS = 10_000L
 
 @Composable
 fun AirScreen(repository: EchoRepository, onOpenSettings: () -> Unit) {
     val snapshot by repository.snapshot.collectAsStateWithLifecycle()
     val config by repository.config.collectAsStateWithLifecycle()
+    val track by repository.track.collectAsStateWithLifecycle()
     val savedTracks by repository.savedTracks.collectAsStateWithLifecycle()
 
     var selectedSignal by remember { mutableStateOf<EchoSignal?>(null) }
     var showCaches by rememberSaveable { mutableStateOf(true) }
     var zoom by remember { mutableStateOf(1f) }
+    val beamProgress = remember { Animatable(0f) }
+    var beamSignal by remember { mutableStateOf<EchoSignal?>(null) }
+    var knownSignalIds by remember { mutableStateOf<Set<String>>(emptySet()) }
+    var previousCompatibility by remember { mutableStateOf<Map<String, Int>>(emptyMap()) }
+    var lastBeamAt by remember { mutableStateOf(0L) }
+    var lastTrackKey by remember { mutableStateOf("") }
+    val beamScope = rememberCoroutineScope()
 
     val topResonance = snapshot.signals.maxOfOrNull { it.compatibility } ?: 0
+    val trackKey = "${track.artist}|${track.title}"
+
+    LaunchedEffect(snapshot.signals, trackKey) {
+        if (trackKey != lastTrackKey) {
+            lastTrackKey = trackKey
+            knownSignalIds = emptySet()
+            previousCompatibility = emptyMap()
+        }
+
+        if (!track.isKnown) {
+            knownSignalIds = snapshot.signals.map { it.id }.toSet()
+            previousCompatibility = snapshot.signals.associate { it.id to it.compatibility }
+            return@LaunchedEffect
+        }
+
+        val now = System.currentTimeMillis()
+        val newcomers = snapshot.signals.filter {
+            it.id !in knownSignalIds && it.compatibility >= RESONANCE_THRESHOLD && !it.isGhost
+        }
+        val crossed = snapshot.signals.filter { signal ->
+            val previous = previousCompatibility[signal.id]
+            previous != null && previous < RESONANCE_THRESHOLD &&
+                signal.compatibility >= RESONANCE_THRESHOLD && !signal.isGhost
+        }
+
+        knownSignalIds = snapshot.signals.map { it.id }.toSet()
+        previousCompatibility = snapshot.signals.associate { it.id to it.compatibility }
+
+        val candidate = (newcomers + crossed).maxByOrNull { it.compatibility }
+        if (candidate != null && beamSignal == null && now - lastBeamAt >= BEAM_COOLDOWN_MS) {
+            beamSignal = candidate
+            lastBeamAt = now
+            beamScope.launch {
+                beamProgress.snapTo(0f)
+                beamProgress.animateTo(
+                    targetValue = 1f,
+                    animationSpec = tween(durationMillis = 1500, easing = FastOutSlowInEasing),
+                )
+                beamSignal = null
+            }
+        }
+    }
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -120,6 +180,13 @@ fun AirScreen(repository: EchoRepository, onOpenSettings: () -> Unit) {
                 onSignalClick = { selectedSignal = it },
                 zoom = zoom,
                 onZoom = { factor -> zoom = (zoom * factor).coerceIn(1f, 2.5f) },
+                beam = beamSignal?.let { signal ->
+                    ResonanceBeam(
+                        angleDegrees = signal.angleDegrees,
+                        distanceRatio = signal.distanceRatio,
+                        progress = { beamProgress.value },
+                    )
+                },
             )
         }
 

@@ -272,6 +272,7 @@ fun EchoHeroSonarCard(
     modifier: Modifier = Modifier,
     zoom: Float = 1f,
     onZoom: (Float) -> Unit = {},
+    beam: ResonanceBeam? = null,
 ) {
     val ranked = signals.sortedByDescending { it.compatibility }
     val strongest = ranked.firstOrNull()
@@ -308,6 +309,7 @@ fun EchoHeroSonarCard(
             onSignalClick = onSignalClick,
             modifier = Modifier.fillMaxWidth(0.82f),
             zoom = zoom,
+            beam = beam,
         )
 
         if (strongest != null) {
