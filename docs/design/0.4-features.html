@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ЭХО 0.4 · решения по экранам</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #06070A; color: #EDF1F5; font-family: "Segoe UI", Roboto, system-ui, sans-serif; }
+  .page { max-width: 1180px; margin: 0 auto; padding: 36px 22px 70px; }
+  .brand { font-size: 12px; letter-spacing: 4px; font-weight: 800; }
+  .brand span { color: #8A94A6; letter-spacing: 1px; font-weight: 500; }
+  h1 { margin: 12px 0 8px; font-size: 34px; letter-spacing: -0.02em; }
+  h2 { margin: 34px 0 10px; font-size: 19px; }
+  p { color: #9AA4B2; line-height: 1.6; font-size: 13.5px; max-width: 760px; }
+  .tags { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 14px; }
+  .tags span { font-size: 10px; letter-spacing: .8px; text-transform: uppercase; border: 1px solid #1E293B; border-radius: 999px; padding: 5px 9px; color: #AEB8C8; }
+  .grid { display: flex; flex-wrap: wrap; gap: 26px; margin-top: 18px; }
+  .card { flex: 1 1 320px; background: #0C0E14; border: 1px solid #1B2029; border-radius: 22px; padding: 20px; }
+  .card h3 { margin: 0 0 6px; font-size: 15px; }
+  .card p { margin: 0; font-size: 12px; }
+  .stage { display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start; justify-content: center; margin-top: 18px; }
+  .phone { width: 360px; height: 740px; border-radius: 40px; background: #15171D; border: 1px solid #2A2E38; padding: 9px; box-shadow: 0 24px 60px rgba(0,0,0,.55); }
+  .screen { width: 100%; height: 100%; border-radius: 33px; background: #07090E; overflow: hidden; display: flex; flex-direction: column; }
+  .status { display: flex; justify-content: space-between; padding: 12px 18px 6px; font-size: 10px; color: #6F7A8A; }
+  .head { padding: 6px 18px 0; }
+  .eyebrow { font-size: 8.5px; letter-spacing: 1.8px; color: #64748B; text-transform: uppercase; }
+  .head h4 { margin: 6px 0 0; font-size: 30px; letter-spacing: -0.02em; }
+  .head .sub { margin-top: 3px; font-size: 11px; color: #85909E; }
+  .metric { display: flex; align-items: flex-end; gap: 8px; padding: 10px 18px 0; }
+  .metric b { font-size: 28px; color: #00F0FF; line-height: 1; }
+  .metric span { font-size: 10px; color: #85909E; padding-bottom: 3px; }
+  .seg { display: flex; margin: 12px 18px 0; padding: 3px; border-radius: 999px; background: rgba(30,41,59,.35); border: 1px solid #1E293B; }
+  .seg span { flex: 1; text-align: center; padding: 8px 0; font-size: 9px; letter-spacing: .8px; color: #85909E; border-radius: 999px; }
+  .seg span.on { background: #F2F5F7; color: #0B0E14; font-weight: 800; }
+  .list { margin-top: 12px; padding: 0 18px; }
+  .row { display: flex; align-items: center; gap: 10px; padding: 12px 0; border-top: 1px solid #1E293B; }
+  .cover { width: 44px; height: 44px; border-radius: 11px; background: linear-gradient(135deg, #38BDF8, #A855F7); flex: 0 0 auto; }
+  .cover.c2 { background: linear-gradient(135deg, #FFB800, #FF5533); }
+  .cover.c3 { background: linear-gradient(135deg, #34D399, #0284C7); }
+  .row .txt { flex: 1; min-width: 0; }
+  .row .artist { font-size: 8px; letter-spacing: .8px; color: #85909E; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .row .track { margin-top: 2px; font-size: 14px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .row .meta { margin-top: 2px; font-size: 8px; color: #64748B; }
+  .save { width: 30px; height: 30px; border-radius: 50%; border: 1px solid #334155; display: grid; place-items: center; color: #00F0FF; font-size: 13px; }
+  .tabs { margin-top: auto; display: flex; justify-content: space-around; padding: 12px 8px 18px; border-top: 1px solid #121821; background: #0D121B; }
+  .tabs span { font-size: 8px; letter-spacing: .6px; color: #64748B; display: flex; flex-direction: column; align-items: center; gap: 3px; }
+  .tabs span.on { color: #00F0FF; font-weight: 700; }
+  .tabs i { font-style: normal; font-size: 14px; }
+  .sheet { margin-top: auto; background: #151E2A; border-radius: 24px 24px 0 0; padding: 10px 18px 20px; border-top: 1px solid #26313E; }
+  .handle { width: 40px; height: 4px; border-radius: 2px; background: #334155; margin: 0 auto 12px; }
+  .album-top { display: flex; gap: 14px; }
+  .album-art { width: 120px; height: 120px; border-radius: 20px; background: linear-gradient(135deg, #38BDF8, #A855F7); flex: 0 0 auto; }
+  .album-meta .k { font-size: 8px; letter-spacing: 1.4px; color: #64748B; }
+  .album-meta h5 { margin: 5px 0 0; font-size: 19px; }
+  .album-meta .a { margin-top: 3px; font-size: 12px; color: #38BDF8; }
+  .album-meta .al { margin-top: 6px; font-size: 10px; color: #85909E; }
+  .chips { display: flex; gap: 5px; margin-top: 12px; flex-wrap: wrap; }
+  .chips span { font-size: 8px; padding: 4px 8px; border-radius: 999px; border: 1px solid #334155; color: #B6C0CD; }
+  .sheet .quote { margin-top: 12px; font-size: 10.5px; color: #85909E; font-style: italic; line-height: 1.5; }
+  .banner { margin-top: 30px; border: 1px solid #1B2029; border-radius: 22px; overflow: hidden; }
+  .banner .in { padding: 20px; display: flex; gap: 16px; align-items: flex-start; }
+  .banner b { color: #00F0FF; }
+  .banner p { margin: 0; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 14px; }
+  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid #1B2029; vertical-align: top; }
+  th { color: #8A94A6; font-size: 9px; letter-spacing: 1.2px; text-transform: uppercase; }
+  td:first-child { color: #8A94A6; width: 22%; }
+  .pick { color: #34D399; font-weight: 700; }
+  footer { margin-top: 34px; color: #66707E; font-size: 11px; }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="brand">ЭХО <span>· решения 0.4</span></div>
+  <h1>Альбом, сохранённое и лишний шум</h1>
+  <p>Четыре решения по вашим пунктам. Два уже внедрены в 0.4.0, два требуют выбора: где живёт «Сохранено» и насколько крупно показывать альбом.</p>
+
+  <div class="tags">
+    <span>pinch-to-zoom</span><span>скрыть тайники</span><span>кварталы убраны</span>
+    <span>подписи вкладок</span><span>альбом из медиа-сессии</span>
+  </div>
+
+  <h2>1. Альбом: три подачи</h2>
+  <div class="grid">
+    <div class="card"><h3>A · Нижняя шторка <span style="color:#34D399">рекомендую</span></h3><p>Тап по пластинке открывает лист: обложка 132 dp, трек, артист, альбом и год, архетип. Не теряет контекст деки.</p></div>
+    <div class="card"><h3>B · Полный экран</h3><p>Обложка на весь экран, текст поверх. Сильно, но выбивает из навигации и требует отдельного перехода назад.</p></div>
+    <div class="card"><h3>C · Раскрытие на месте</h3><p>Карточка разворачивается под винилом. Компактно, но дека становится длинной и прыгает при раскрытии.</p></div>
+  </div>
+
+  <div class="stage">
+    <div class="phone">
+      <div class="screen">
+        <div class="status"><span>09:41</span><span>▮ ▮ ▮</span></div>
+        <div class="head">
+          <div class="eyebrow">Дека · 33⅓</div>
+          <h4>Дека</h4>
+          <div class="sub">Сейчас на игле</div>
+        </div>
+        <div class="metric"><b>5</b><span>голосов рядом · резонанс до 89%</span></div>
+        <div class="list">
+          <div class="row"><div class="cover"></div><div class="txt"><div class="artist">Purl · атмосферный техно</div><div class="track">Renovatio</div><div class="meta">2024 · 8A · 70 BPM</div></div><div class="save">✦</div></div>
+          <div class="row"><div class="cover c2"></div><div class="txt"><div class="artist">Alcest · пост-метал</div><div class="track">Sapphire</div><div class="meta">2025 · 12A · 140 BPM</div></div><div class="save">✦</div></div>
+          <div class="row"><div class="cover c3"></div><div class="txt"><div class="artist">Кино · пост-панк</div><div class="track">Группа крови</div><div class="meta">1988 · 6A · 126 BPM</div></div><div class="save">✦</div></div>
+        </div>
+        <div class="sheet">
+          <div class="handle"></div>
+          <div class="album-top">
+            <div class="album-art"></div>
+            <div class="album-meta">
+              <div class="k">АЛЬБОМ</div>
+              <h5>Renovatio</h5>
+              <div class="a">Purl</div>
+              <div class="al">2024 · атмосферный техно</div>
+            </div>
+          </div>
+          <div class="chips"><span>Яндекс Музыка</span><span>Вечерняя улица</span><span>Ночной винил</span></div>
+          <div class="quote">Альбом и обложка приходят из медиа-сессии плеера. Если плеер их не отдаёт, остаётся цвет архетипа.</div>
+        </div>
+        <div class="tabs"><span class="on"><i>◉</i>ЭФИР</span><span><i>▷</i>ДЕКА</span><span><i>✦</i>ОТЗВУКИ</span><span><i>◇</i>ТАЙНИКИ</span></div>
+      </div>
+    </div>
+
+    <div class="phone">
+      <div class="screen">
+        <div class="status"><span>09:41</span><span>▮ ▮ ▮</span></div>
+        <div class="head">
+          <div class="eyebrow">Вечер · летопись</div>
+          <h4>Отзвуки</h4>
+          <div class="sub">Следы вечера и чужие волны</div>
+        </div>
+        <div class="metric"><b>7</b><span>откликов за вечер</span></div>
+        <div class="seg"><span>ОТКЛИКИ</span><span class="on">СОХРАНЕНО</span></div>
+        <div class="list">
+          <div class="row"><div class="cover"></div><div class="txt"><div class="artist">Purl</div><div class="track">Renovatio</div><div class="meta">сохранено сегодня · 8A</div></div><div class="save">✦</div></div>
+          <div class="row"><div class="cover c2"></div><div class="txt"><div class="artist">Alcest</div><div class="track">Sapphire</div><div class="meta">сохранено сегодня · 12A</div></div><div class="save">✦</div></div>
+          <div class="row"><div class="cover c3"></div><div class="txt"><div class="artist">Кино</div><div class="track">Группа крови</div><div class="meta">сохранено вчера · 6A</div></div><div class="save">✦</div></div>
+        </div>
+        <div class="tabs"><span><i>◉</i>ЭФИР</span><span><i>▷</i>ДЕКА</span><span class="on"><i>✦</i>ОТЗВУКИ</span><span><i>◇</i>ТАЙНИКИ</span></div>
+      </div>
+    </div>
+  </div>
+
+  <h2>2. «Сохранено»: три места</h2>
+  <table>
+    <tr><th>Вариант</th><th>Как работает</th><th>Плюсы</th><th>Минусы</th></tr>
+    <tr><td>A · вкладка в Отзвуках <span class="pick">рекомендую</span></td><td>«ОТКЛИКИ / СОХРАНЕНО» сверху. Сохранить можно из паспорта сигнала, с деки и из альбома.</td><td>Одно очевидное место, не плодит кнопок</td><td>Нужен второй тап, чтобы добраться</td></tr>
+    <tr><td>B · закладка в шапке</td><td>Иконка ✦ в шапке каждого экрана открывает шторку сохранённого.</td><td>Доступ в один тап отовсюду</td><td>Ещё одна иконка в шапке, дублирует Отзвуки</td></tr>
+    <tr><td>C · долгое нажатие</td><td>Долгий тап по сигналу сохраняет, без явной кнопки.</td><td>Чистый интерфейс</td><td>Функцию никто не найдёт</td></tr>
+  </table>
+
+  <h2>3. Кварталы: убрать</h2>
+  <div class="banner"><div class="in"><div><b>Решение:</b><p>Блок «Кварталы» убран с ЭФИРА. Зона уже написана в надзаголовке («СОНАР · ВЕЧЕРНЯЯ УЛИЦА»), а «5 кварталов в эфире» осталось меткой на сонаре. Простому пользователю список чужих районов ничего не даёт и отвлекает от сигналов.</p></div></div></div>
+
+  <h2>4. Что уже внедрено в 0.4.0</h2>
+  <div class="grid">
+    <div class="card"><h3>Масштаб сонара</h3><p>Двумя пальцами 1.0×–2.5×. Кольца, точки и тайники масштабируются вместе; тап по точке продолжает работать.</p></div>
+    <div class="card"><h3>Скрыть тайники</h3><p>Маленькая янтарная кнопка на ЭФИРЕ: убирает ромбы с сонара и метку ближайшего тайника, не затрагивая список.</p></div>
+    <div class="card"><h3>Подписи вкладок</h3><p>ЭФИР · ДЕКА · ОТЗВУКИ · ТАЙНИКИ подписаны всегда, активная — в циановой пилюле.</p></div>
+    <div class="card"><h3>Паспорт альбома</h3><p>Тап по пластинке: обложка, трек, артист, альбом и год из медиа-сессии, архетип и настроение.</p></div>
+  </div>
+
+  <footer>Файл: docs/design/0.4-features.html · альбом у чужих сигналов появится, когда новый сервер начнёт хранить поле album.</footer>
+</div>
+</body>
+</html>

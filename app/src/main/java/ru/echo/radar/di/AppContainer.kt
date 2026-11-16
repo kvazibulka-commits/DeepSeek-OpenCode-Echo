@@ -13,6 +13,7 @@ import ru.echo.radar.data.remote.EchoApiClient
 import ru.echo.radar.data.repository.EchoRepository
 import ru.echo.radar.data.settings.DeviceIdentity
 import ru.echo.radar.data.settings.EchoSettingsStore
+import ru.echo.radar.data.settings.SavedTracksStore
 import java.util.concurrent.TimeUnit
 
 /**
@@ -38,6 +39,7 @@ class AppContainer(context: Context) {
     val repository = EchoRepository(
         api = api,
         settingsStore = settings,
+        savedTracksStore = SavedTracksStore(appContext),
         deviceId = DeviceIdentity.getOrCreate(appContext),
         scope = appScope,
     )

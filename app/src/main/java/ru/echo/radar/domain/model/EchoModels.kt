@@ -114,6 +114,9 @@ data class PlayingTrack(
     val artist: String = "",
     val title: String = "",
     val sourceApp: String = "",
+    val album: String = "",
+    val year: String = "",
+    val genre: String = "",
 ) {
     val isKnown: Boolean get() = artist.isNotBlank() && title.isNotBlank()
     val displayArtist: String get() = artist.ifBlank { "Игла ещё не опущена" }
@@ -143,6 +146,30 @@ data class EchoSnapshot(
 data class EchoEvent(
     val message: String,
     val isError: Boolean = false,
+)
+
+data class SavedTrack(
+    val id: String,
+    val artist: String,
+    val title: String,
+    val album: String = "",
+    val coverUrl: String? = null,
+    val persona: String = "",
+    val savedAt: Long = 0L,
+) {
+    companion object {
+        fun makeId(artist: String, title: String): String =
+            artist.trim().lowercase() + "|" + title.trim().lowercase()
+    }
+}
+
+fun EchoSignal.toSavedTrack(savedAt: Long = System.currentTimeMillis()): SavedTrack = SavedTrack(
+    id = SavedTrack.makeId(artist, title),
+    artist = artist,
+    title = title,
+    coverUrl = coverUrl,
+    persona = personaTitle,
+    savedAt = savedAt,
 )
 
 data class EchoSettings(

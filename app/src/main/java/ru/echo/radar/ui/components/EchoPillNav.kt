@@ -75,7 +75,7 @@ fun EchoPillNav(
                         .clip(RoundedCornerShape(999.dp))
                         .background(background)
                         .clickable { onSelect(tab) }
-                        .padding(vertical = 11.dp),
+                        .padding(vertical = 10.dp),
                     horizontalArrangement = Arrangement.Center,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
@@ -83,18 +83,17 @@ fun EchoPillNav(
                         imageVector = tab.icon,
                         contentDescription = tab.label,
                         tint = foreground,
-                        modifier = Modifier.size(17.dp),
+                        modifier = Modifier.size(16.dp),
                     )
-                    if (selected) {
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = tab.label,
-                            fontSize = 9.sp,
-                            fontWeight = FontWeight.Bold,
-                            letterSpacing = 0.6.sp,
-                            color = foreground,
-                        )
-                    }
+                    Spacer(modifier = Modifier.width(5.dp))
+                    Text(
+                        text = tab.label,
+                        fontSize = 8.5.sp,
+                        fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+                        letterSpacing = 0.4.sp,
+                        color = foreground,
+                        maxLines = 1,
+                    )
                 }
             }
         }

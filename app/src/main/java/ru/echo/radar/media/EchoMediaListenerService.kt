@@ -140,7 +140,10 @@ class EchoMediaListenerService : NotificationListenerService() {
         val cover = metadata.getBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART)
             ?: metadata.getBitmap(MediaMetadata.METADATA_KEY_ART)
             ?: metadata.getBitmap(MediaMetadata.METADATA_KEY_DISPLAY_ICON)
-        publish(packageName, artist, title, cover)
+        val album = metadata.getString(MediaMetadata.METADATA_KEY_ALBUM).orEmpty()
+        val year = metadata.getString(MediaMetadata.METADATA_KEY_YEAR).orEmpty()
+        val genre = metadata.getString(MediaMetadata.METADATA_KEY_GENRE).orEmpty()
+        publish(packageName, artist, title, cover, album, year, genre)
     }
 
     private fun publish(
@@ -148,18 +151,29 @@ class EchoMediaListenerService : NotificationListenerService() {
         artist: String,
         title: String,
         cover: Bitmap? = null,
+        album: String = "",
+        year: String = "",
+        genre: String = "",
     ) {
         if (artist.isBlank()) {
             val parsed = TrackText.parse(title)
             if (parsed != null) {
-                publish(packageName, parsed.first, parsed.second, cover)
+                publish(packageName, parsed.first, parsed.second, cover, album, year, genre)
                 return
             }
         }
 
         val app = application as? EchoApplication ?: return
         val cleanArtist = artist.ifBlank { "Неизвестный исполнитель" }
-        app.container.repository.onSystemTrackDetected(cleanArtist, title, packageName, cover)
+        app.container.repository.onSystemTrackDetected(
+            artist = cleanArtist,
+            title = title,
+            packageName = packageName,
+            cover = cover,
+            album = album,
+            year = year,
+            genre = genre,
+        )
     }
 
     private data class SessionBinding(

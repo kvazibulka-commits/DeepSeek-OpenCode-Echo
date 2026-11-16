@@ -27,6 +27,7 @@ import ru.echo.radar.data.remote.BannerDto
 import ru.echo.radar.data.remote.EchoApiClient
 import ru.echo.radar.data.remote.EchoUrl
 import ru.echo.radar.data.settings.EchoSettingsStore
+import ru.echo.radar.data.settings.SavedTracksStore
 import ru.echo.radar.domain.SourceApps
 import ru.echo.radar.domain.TrackSanitizer
 import ru.echo.radar.domain.TrackText
@@ -35,6 +36,7 @@ import ru.echo.radar.domain.model.EchoEvent
 import ru.echo.radar.domain.model.EchoSettings
 import ru.echo.radar.domain.model.EchoSnapshot
 import ru.echo.radar.domain.model.PlayingTrack
+import ru.echo.radar.domain.model.SavedTrack
 
 /**
  * Единственный источник состояния ЭХО.
@@ -47,6 +49,7 @@ import ru.echo.radar.domain.model.PlayingTrack
 class EchoRepository(
     private val api: EchoApiClient,
     private val settingsStore: EchoSettingsStore,
+    private val savedTracksStore: SavedTracksStore,
     val deviceId: String,
     private val scope: CoroutineScope,
 ) {
@@ -59,6 +62,17 @@ class EchoRepository(
 
     private val _cover = MutableStateFlow<Bitmap?>(null)
     val cover: StateFlow<Bitmap?> = _cover.asStateFlow()
+
+    private val _savedTracks = MutableStateFlow(savedTracksStore.load())
+    val savedTracks: StateFlow<List<SavedTrack>> = _savedTracks.asStateFlow()
+
+    fun toggleSaved(track: SavedTrack) {
+        _savedTracks.value = savedTracksStore.toggle(track)
+    }
+
+    fun removeSaved(id: String) {
+        _savedTracks.value = savedTracksStore.remove(id)
+    }
 
     private val _config = MutableStateFlow(EchoSettings())
     val config: StateFlow<EchoSettings> = _config.asStateFlow()
@@ -128,6 +142,9 @@ class EchoRepository(
         title: String,
         packageName: String,
         cover: Bitmap? = null,
+        album: String = "",
+        year: String = "",
+        genre: String = "",
     ) {
         if (TrackSanitizer.isJunk(artist, title)) return
 
@@ -137,15 +154,30 @@ class EchoRepository(
         val current = _track.value
 
         if (current.artist == cleanArtist && current.title == cleanTitle) {
-            // Обложка часто приходит вторым колбэком уже после названия трека.
+            var updated = false
+            // Обложка и альбом часто приходят вторым колбэком уже после названия трека.
             if (cover != null && _cover.value == null) {
                 _cover.value = cover
+                updated = true
+            }
+            if (album.isNotBlank() && current.album.isBlank()) {
+                _track.value = current.copy(album = album, year = year, genre = genre)
+                updated = true
+            }
+            if (updated) {
                 scope.launch { sendSignal(cleanArtist, cleanTitle, source) }
             }
             return
         }
 
-        _track.value = PlayingTrack(cleanArtist, cleanTitle, source)
+        _track.value = PlayingTrack(
+            artist = cleanArtist,
+            title = cleanTitle,
+            sourceApp = source,
+            album = album,
+            year = year,
+            genre = genre,
+        )
         _cover.value = cover
 
         if (lastSentTrack == Pair(cleanArtist, cleanTitle)) return
@@ -331,6 +363,9 @@ class EchoRepository(
             put("title", title)
             put("sourceName", sourceName)
             put("zoneName", settings.zoneName)
+            val track = _track.value
+            if (track.album.isNotBlank()) put("album", track.album)
+            if (track.year.isNotBlank()) put("year", track.year)
             encodeCover(_cover.value)?.let { encoded -> put("coverBase64", encoded) }
         }
 

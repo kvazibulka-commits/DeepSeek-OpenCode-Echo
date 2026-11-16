@@ -46,6 +46,7 @@ fun EchoSonar(
     isDawn: Boolean,
     onSignalClick: (EchoSignal) -> Unit,
     modifier: Modifier = Modifier,
+    zoom: Float = 1f,
 ) {
     val transition = rememberInfiniteTransition(label = "sonar")
     val sweep by transition.animateFloat(
@@ -64,7 +65,7 @@ fun EchoSonar(
             .pointerInput(signals) {
                 detectTapGestures { tap ->
                     val center = Offset(size.width / 2f, size.height / 2f)
-                    val maxR = min(size.width, size.height) * 0.42f
+                    val maxR = min(size.width, size.height) * 0.42f * zoom
                     val hit = signals.firstOrNull { signal ->
                         val position = sonarPosition(
                             signal.angleDegrees,
@@ -79,7 +80,7 @@ fun EchoSonar(
             },
     ) {
         val center = Offset(size.width / 2f, size.height / 2f)
-        val maxR = min(size.width, size.height) * 0.42f
+        val maxR = min(size.width, size.height) * 0.42f * zoom
         val myColor = Color(myColorHex)
 
         if (isDawn) {

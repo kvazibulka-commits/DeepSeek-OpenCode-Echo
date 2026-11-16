@@ -39,8 +39,11 @@ import ru.echo.radar.data.repository.EchoRepository
 import ru.echo.radar.domain.model.EchoCapsule
 import ru.echo.radar.domain.model.EchoSignal
 import ru.echo.radar.domain.model.EchoZone
+import ru.echo.radar.domain.model.SavedTrack
+import ru.echo.radar.domain.model.toSavedTrack
 import ru.echo.radar.ui.components.EchoCapsuleRow
 import ru.echo.radar.ui.components.EchoCapsuleSheet
+import ru.echo.radar.ui.components.EchoChoiceChip
 import ru.echo.radar.ui.components.EchoEmptyState
 import ru.echo.radar.ui.components.EchoExpressiveHeader
 import ru.echo.radar.ui.components.EchoHeroSonarCard
@@ -57,10 +60,13 @@ import ru.echo.radar.ui.theme.EchoColors
 fun AirScreen(repository: EchoRepository, onOpenSettings: () -> Unit) {
     val snapshot by repository.snapshot.collectAsStateWithLifecycle()
     val config by repository.config.collectAsStateWithLifecycle()
+    val savedTracks by repository.savedTracks.collectAsStateWithLifecycle()
 
     var selectedSignal by remember { mutableStateOf<EchoSignal?>(null) }
     var selectedCapsule by remember { mutableStateOf<EchoCapsule?>(null) }
     var mode by rememberSaveable { mutableStateOf(0) }
+    var showCaches by rememberSaveable { mutableStateOf(true) }
+    var zoom by remember { mutableStateOf(1f) }
 
     val topResonance = snapshot.signals.maxOfOrNull { it.compatibility } ?: 0
 
@@ -97,6 +103,20 @@ fun AirScreen(repository: EchoRepository, onOpenSettings: () -> Unit) {
                 selectedIndex = mode,
                 onSelect = { mode = it },
             )
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 18.dp),
+                horizontalArrangement = Arrangement.End,
+            ) {
+                EchoChoiceChip(
+                    text = if (showCaches) "СКРЫТЬ ТАЙНИКИ" else "ПОКАЗАТЬ ТАЙНИКИ",
+                    selected = !showCaches,
+                    onClick = { showCaches = !showCaches },
+                    accent = EchoColors.Amber,
+                )
+            }
             Spacer(modifier = Modifier.height(12.dp))
         }
 
@@ -104,7 +124,7 @@ fun AirScreen(repository: EchoRepository, onOpenSettings: () -> Unit) {
             item {
                 EchoHeroSonarCard(
                     signals = snapshot.signals,
-                    capsules = snapshot.capsules,
+                    capsules = if (showCaches) snapshot.capsules else emptyList(),
                     thermalPatches = snapshot.thermalPatches,
                     lagrange = snapshot.lagrange,
                     syncedTargets = snapshot.syncedTargets,
@@ -112,6 +132,8 @@ fun AirScreen(repository: EchoRepository, onOpenSettings: () -> Unit) {
                     isDawn = snapshot.isDawn,
                     zoneCount = snapshot.zones.size,
                     onSignalClick = { selectedSignal = it },
+                    zoom = zoom,
+                    onZoom = { factor -> zoom = (zoom * factor).coerceIn(1f, 2.5f) },
                 )
             }
 
@@ -137,9 +159,6 @@ fun AirScreen(repository: EchoRepository, onOpenSettings: () -> Unit) {
                 }
             }
 
-            if (snapshot.zones.isNotEmpty()) {
-                item { ZoneStrip(snapshot.zones) }
-            }
         } else {
             item { EchoSectionLabel("Тайники в эфире · ${snapshot.capsules.size}") }
 
@@ -162,6 +181,10 @@ fun AirScreen(repository: EchoRepository, onOpenSettings: () -> Unit) {
         EchoSignalSheet(
             signal = signal,
             onDismiss = { selectedSignal = null },
+            isSaved = savedTracks.any {
+                it.id == SavedTrack.makeId(signal.artist, signal.title)
+            },
+            onToggleSave = { repository.toggleSaved(signal.toSavedTrack()) },
             onWave = {
                 repository.sendWave(signal.id)
                 selectedSignal = null

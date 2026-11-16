@@ -2,6 +2,7 @@ package ru.echo.radar.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -42,8 +43,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
 import ru.echo.radar.data.repository.EchoRepository
 import ru.echo.radar.data.settings.EchoSettingsStore
+import ru.echo.radar.domain.model.SavedTrack
 import ru.echo.radar.media.NotificationAccess
 import ru.echo.radar.ui.components.EchoActionRow
+import ru.echo.radar.ui.components.EchoAlbumSheet
 import ru.echo.radar.ui.components.EchoChip
 import ru.echo.radar.ui.components.EchoExpressiveHeader
 import ru.echo.radar.ui.components.EchoPillButton
@@ -64,6 +67,7 @@ fun DeckScreen(
     val snapshot by repository.snapshot.collectAsStateWithLifecycle()
     val track by repository.track.collectAsStateWithLifecycle()
     val cover by repository.cover.collectAsStateWithLifecycle()
+    val savedTracks by repository.savedTracks.collectAsStateWithLifecycle()
     val config by repository.config.collectAsStateWithLifecycle()
 
     var mediaAccess by remember { mutableStateOf(NotificationAccess.isEnabled(context)) }
@@ -73,6 +77,7 @@ fun DeckScreen(
     }
 
     var showManualDialog by remember { mutableStateOf(false) }
+    var showAlbum by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -91,7 +96,8 @@ fun DeckScreen(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 18.dp, vertical = 8.dp),
+                .padding(horizontal = 18.dp, vertical = 8.dp)
+                .clickable { showAlbum = true },
         ) {
             EchoVinylHero(
                 labelColorHex = snapshot.myEcho.colorHex,
@@ -268,6 +274,34 @@ fun DeckScreen(
                 repository.publishManual(text)
                 showManualDialog = false
             },
+        )
+    }
+
+    if (showAlbum) {
+        val ownId = SavedTrack.makeId(track.artist, track.title)
+        EchoAlbumSheet(
+            track = track,
+            cover = cover,
+            persona = snapshot.myEcho.personaTitle,
+            mood = snapshot.myEcho.moodLabel,
+            source = track.sourceApp,
+            zoneName = config.zoneName,
+            isSaved = savedTracks.any { it.id == ownId },
+            onToggleSave = {
+                if (track.isKnown) {
+                    repository.toggleSaved(
+                        SavedTrack(
+                            id = ownId,
+                            artist = track.artist,
+                            title = track.title,
+                            album = track.album,
+                            persona = snapshot.myEcho.personaTitle,
+                            savedAt = System.currentTimeMillis(),
+                        ),
+                    )
+                }
+            },
+            onDismiss = { showAlbum = false },
         )
     }
 }

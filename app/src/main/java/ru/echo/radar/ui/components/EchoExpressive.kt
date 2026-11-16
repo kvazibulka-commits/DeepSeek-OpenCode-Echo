@@ -6,6 +6,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -32,6 +33,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -268,6 +270,8 @@ fun EchoHeroSonarCard(
     zoneCount: Int,
     onSignalClick: (EchoSignal) -> Unit,
     modifier: Modifier = Modifier,
+    zoom: Float = 1f,
+    onZoom: (Float) -> Unit = {},
 ) {
     val ranked = signals.sortedByDescending { it.compatibility }
     val strongest = ranked.firstOrNull()
@@ -285,7 +289,12 @@ fun EchoHeroSonarCard(
                     listOf(EchoColors.SurfaceTonal, EchoColors.Surface),
                 ),
             )
-            .border(1.dp, EchoColors.Line, RoundedCornerShape(30.dp)),
+            .border(1.dp, EchoColors.Line, RoundedCornerShape(30.dp))
+            .pointerInput(Unit) {
+                detectTransformGestures { _, _, gestureZoom, _ ->
+                    onZoom(gestureZoom)
+                }
+            },
         contentAlignment = Alignment.Center,
     ) {
         EchoSonar(
@@ -298,6 +307,7 @@ fun EchoHeroSonarCard(
             isDawn = isDawn,
             onSignalClick = onSignalClick,
             modifier = Modifier.fillMaxWidth(0.82f),
+            zoom = zoom,
         )
 
         if (strongest != null) {
