@@ -24,6 +24,8 @@
 - Медиа-служба: MediaController.Callback + опрос 2.5 с, allowlist пакетов, фильтр мусора.
 - Тесты: EchoUrlTest, TrackTextTest, EchoMappingTest.
 - CI: `.github/workflows/android.yml`, debug APK в артефактах, общий debug-keystore.
+- Дизайн: `docs/design/variants-0.2.html` + `variants-0.2.png` — три направления
+  (ночной винил, Material 3 Expressive, аналоговый журнал) для выбора следующей итерации UI.
 
 **Проверки**
 

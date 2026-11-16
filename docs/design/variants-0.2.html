@@ -1,0 +1,758 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ЭХО · варианты дизайна 0.2</title>
+<style>
+  :root {
+    --page-bg: #06070A;
+    --page-panel: #0C0E14;
+    --page-line: #1B2029;
+    --page-text: #EDF1F5;
+    --page-dim: #8A94A6;
+    --page-accent: #38BDF8;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background:
+      radial-gradient(1100px 600px at 15% -10%, rgba(56, 189, 248, .10), transparent 60%),
+      radial-gradient(900px 500px at 95% 0%, rgba(168, 85, 247, .08), transparent 55%),
+      var(--page-bg);
+    color: var(--page-text);
+    font-family: "Segoe UI", Roboto, system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page { max-width: 1440px; margin: 0 auto; padding: 40px 28px 80px; }
+
+  .masthead { display: flex; flex-wrap: wrap; gap: 18px 36px; align-items: flex-end; justify-content: space-between; border-bottom: 1px solid var(--page-line); padding-bottom: 22px; }
+  .brand { font-size: 13px; letter-spacing: 4px; font-weight: 800; }
+  .brand span { color: var(--page-dim); font-weight: 500; letter-spacing: 1px; }
+  .masthead h1 { margin: 10px 0 0; font-size: clamp(28px, 3.2vw, 44px); line-height: 1.05; letter-spacing: -0.02em; }
+  .masthead p { margin: 10px 0 0; max-width: 620px; color: var(--page-dim); font-size: 14px; line-height: 1.6; }
+
+  .trends { display: flex; flex-wrap: wrap; gap: 7px; max-width: 460px; }
+  .trends span { font-size: 10.5px; letter-spacing: .6px; text-transform: uppercase; color: #AEB8C8; border: 1px solid var(--page-line); background: rgba(255, 255, 255, .02); padding: 5px 9px; border-radius: 999px; }
+
+  .legend-note { margin: 26px 0 8px; display: flex; flex-wrap: wrap; gap: 10px 26px; color: var(--page-dim); font-size: 12.5px; }
+  .legend-note b { color: var(--page-text); font-weight: 600; }
+
+  .variant { margin-top: 44px; border: 1px solid var(--page-line); border-radius: 26px; background: linear-gradient(180deg, rgba(255,255,255,.025), rgba(255,255,255,0)); overflow: hidden; }
+  .variant-head { display: flex; flex-wrap: wrap; gap: 14px 22px; align-items: center; padding: 22px 24px; border-bottom: 1px solid var(--page-line); }
+  .letter { width: 44px; height: 44px; border-radius: 14px; display: grid; place-items: center; font-weight: 800; font-size: 18px; border: 1px solid var(--page-line); background: rgba(255,255,255,.03); }
+  .variant-head h2 { margin: 0; font-size: 21px; letter-spacing: -0.01em; }
+  .variant-head p { margin: 4px 0 0; color: var(--page-dim); font-size: 12.5px; line-height: 1.5; max-width: 720px; }
+  .variant-head .tag { margin-left: auto; font-size: 10px; letter-spacing: 1.2px; text-transform: uppercase; padding: 7px 11px; border-radius: 999px; border: 1px solid var(--page-line); color: var(--page-dim); white-space: nowrap; }
+
+  .stage { display: flex; flex-wrap: wrap; gap: 28px; padding: 30px 24px; align-items: flex-start; justify-content: center; }
+  .stage-side { flex: 1 1 320px; max-width: 360px; min-width: 280px; padding-top: 8px; }
+  .stage-side h3 { margin: 0 0 10px; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--page-dim); }
+
+  .bullets { margin: 0 0 18px; padding: 0; list-style: none; }
+  .bullets li { position: relative; padding-left: 18px; margin: 0 0 9px; font-size: 12.8px; line-height: 1.55; color: #C3CBD8; }
+  .bullets li:before { content: ""; position: absolute; left: 0; top: 7px; width: 6px; height: 6px; border-radius: 50%; background: var(--page-accent); opacity: .8; }
+  .bullets.neg li:before { background: #F87171; }
+  .bullets.neg li { color: #A9B1BF; }
+
+  .meter { display: grid; gap: 9px; margin: 0 0 18px; }
+  .meter div { display: grid; grid-template-columns: 108px 1fr 36px; gap: 10px; align-items: center; font-size: 11.5px; color: var(--page-dim); }
+  .meter i { display: block; height: 6px; border-radius: 3px; background: #222834; overflow: hidden; }
+  .meter i b { display: block; height: 100%; background: linear-gradient(90deg, #38BDF8, #A855F7); border-radius: 3px; }
+  .meter em { font-style: normal; text-align: right; color: #C3CBD8; }
+
+  .phone-wrap { display: flex; flex-wrap: wrap; gap: 22px; justify-content: center; }
+
+  /* ── phone frame ── */
+  .phone {
+    position: relative;
+    width: 390px;
+    height: 844px;
+    border-radius: 44px;
+    padding: 10px;
+    background: #15171D;
+    border: 1px solid #2A2E38;
+    box-shadow: 0 30px 70px rgba(0, 0, 0, .55), inset 0 0 0 1px rgba(255, 255, 255, .04);
+    flex: 0 0 auto;
+  }
+  .phone:before { content: ""; position: absolute; top: 10px; left: 50%; transform: translateX(-50%); width: 118px; height: 24px; border-radius: 0 0 16px 16px; background: #0B0C10; z-index: 5; }
+  .screen { position: relative; width: 100%; height: 100%; border-radius: 36px; overflow: hidden; display: flex; flex-direction: column; }
+  .status { display: flex; justify-content: space-between; align-items: center; padding: 12px 22px 6px; font-size: 11px; letter-spacing: .4px; }
+
+  /* ═══════════════════════════════════════════
+     A · НОЧНОЙ ВИНИЛ
+     ═══════════════════════════════════════════ */
+  .va .screen { background: #07090E; color: #F2F5F7; }
+  .va .status { color: #85909E; }
+  .va .topbar { display: flex; align-items: flex-start; gap: 10px; padding: 8px 18px 2px; }
+  .va .topbar h3 { margin: 0; font-size: 20px; letter-spacing: 1.6px; font-weight: 800; }
+  .va .topbar p { margin: 3px 0 0; font-size: 11px; color: #85909E; }
+  .va .gear { margin-left: auto; width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; color: #85909E; border: 1px solid #1E293B; font-size: 15px; }
+  .va .livelabel { display: flex; align-items: center; gap: 7px; padding: 6px 18px; font-size: 10.5px; color: #85909E; }
+  .va .livelabel i { width: 6px; height: 6px; border-radius: 50%; background: #34D399; box-shadow: 0 0 8px rgba(52, 211, 153, .6); }
+
+  .va .sonar { position: relative; width: 276px; height: 276px; margin: 4px auto 2px; border-radius: 50%; background: radial-gradient(circle at 32% 26%, rgba(56,189,248,.10), transparent 58%), repeating-radial-gradient(circle, transparent 0 33px, #1E293B 33px 34px), #07090E; }
+  .va .sonar:after { content: ""; position: absolute; inset: 0; border-radius: 50%; border: 1px solid rgba(0, 240, 255, .22); }
+  .va .sweep { position: absolute; inset: 0; border-radius: 50%; background: conic-gradient(from 0deg, transparent 0 292deg, rgba(0, 240, 255, .20) 350deg, transparent 360deg); }
+  .va .cross:before, .va .cross:after { content: ""; position: absolute; background: rgba(30, 41, 59, .8); }
+  .va .cross:before { left: 12%; right: 12%; top: 50%; height: 1px; }
+  .va .cross:after { top: 12%; bottom: 12%; left: 50%; width: 1px; }
+  .va .dot { position: absolute; left: var(--x); top: var(--y); width: 9px; height: 9px; border-radius: 50%; background: var(--c); box-shadow: 0 0 14px var(--c); transform: translate(-50%, -50%); }
+  .va .dot:after { content: ""; position: absolute; inset: -6px; border-radius: 50%; border: 1px solid color-mix(in srgb, var(--c) 45%, transparent); }
+  .va .dot.ghost:after { border-style: dashed; border-color: rgba(255, 184, 0, .6); }
+  .va .me { position: absolute; left: 50%; top: 50%; width: 8px; height: 8px; border-radius: 50%; background: #00F0FF; transform: translate(-50%, -50%); box-shadow: 0 0 0 5px rgba(0, 240, 255, .14), 0 0 16px rgba(0, 240, 255, .7); }
+  .va .legend { display: flex; gap: 14px; justify-content: center; font-size: 8.5px; letter-spacing: .8px; color: #64748B; margin: 4px 0 8px; }
+  .va .legend span { display: inline-flex; align-items: center; gap: 5px; }
+  .va .legend i { width: 5px; height: 5px; border-radius: 50%; display: inline-block; }
+  .va .zonechips { display: flex; gap: 7px; padding: 0 18px 8px; overflow: hidden; }
+  .va .zonechips span { flex: 0 0 auto; font-size: 10px; color: #C9D2DD; border: 1px solid #1E293B; background: #0D121B; border-radius: 10px; padding: 7px 9px; }
+  .va .zonechips small { display: block; color: #64748B; font-size: 8px; margin-top: 2px; letter-spacing: .4px; }
+  .va .section { padding: 8px 18px 6px; font-size: 9px; letter-spacing: 1.6px; color: #64748B; font-family: Consolas, "SF Mono", monospace; }
+
+  .va .card { position: relative; display: flex; gap: 10px; margin: 0 18px 9px; padding: 12px 12px 12px 15px; border-radius: 16px; background: #0D121B; border: 1px solid #1E293B; overflow: hidden; }
+  .va .card:before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--c, #38BDF8); }
+  .va .card .persona { font-size: 9.5px; letter-spacing: .4px; color: var(--c, #38BDF8); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .va .card .track { font-size: 14px; font-weight: 700; margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .va .card .chips { display: flex; gap: 5px; margin-top: 8px; overflow: hidden; }
+  .va .card .chips span { flex: 0 0 auto; font-size: 9px; padding: 3px 7px; border-radius: 999px; border: 1px solid #334155; background: rgba(30, 41, 59, .6); color: #B6C0CD; }
+  .va .card .chips span.hot { color: var(--c, #38BDF8); border-color: color-mix(in srgb, var(--c, #38BDF8) 45%, #334155); }
+  .va .avatar { flex: 0 0 auto; width: 40px; height: 40px; border-radius: 50%; border: 1px solid color-mix(in srgb, var(--c, #38BDF8) 40%, transparent); background: radial-gradient(circle at 50% 18%, color-mix(in srgb, var(--c, #38BDF8) 55%, transparent) 0 22%, transparent 23%), radial-gradient(circle at 82% 62%, color-mix(in srgb, var(--c, #38BDF8) 45%, transparent) 0 18%, transparent 19%), radial-gradient(circle at 18% 62%, color-mix(in srgb, var(--c, #38BDF8) 45%, transparent) 0 18%, transparent 19%), #0B1325; }
+  .va .card .dist { position: absolute; right: 12px; bottom: 10px; font-size: 8px; color: #64748B; }
+
+  .va .tabs { margin-top: auto; display: flex; border-top: 1px solid #121821; background: #0D121B; padding: 10px 8px 18px; }
+  .va .tabs span { flex: 1; text-align: center; font-size: 8.5px; letter-spacing: 1.1px; color: #64748B; }
+  .va .tabs span.active { color: #00F0FF; font-weight: 700; }
+  .va .tabs span b { display: block; font-size: 15px; font-weight: 400; margin-bottom: 2px; }
+
+  /* ═══════════════════════════════════════════
+     B · ЭКСПРЕССИВНЫЙ СОНAР
+     ═══════════════════════════════════════════ */
+  .vb .screen { background: radial-gradient(700px 420px at 80% -10%, rgba(185, 167, 255, .24), transparent 60%), radial-gradient(500px 300px at 0% 10%, rgba(124, 246, 255, .10), transparent 55%), #0C0A12; color: #F6F1FF; }
+  .vb .status { color: #A79BBF; }
+  .vb .topbar { padding: 4px 20px 0; }
+  .vb .topbar .eyebrow { font-size: 9px; letter-spacing: 2.4px; color: #A79BBF; text-transform: uppercase; }
+  .vb .topbar .row { display: flex; align-items: flex-start; gap: 10px; margin-top: 6px; }
+  .vb .topbar h3 { margin: 0; font-size: 34px; font-weight: 800; letter-spacing: -0.03em; line-height: 1; }
+  .vb .topbar .gear { margin-left: auto; width: 36px; height: 36px; border-radius: 12px; display: grid; place-items: center; background: rgba(255,255,255,.06); color: #D9CFF3; font-size: 15px; }
+  .vb .metricline { display: flex; align-items: baseline; gap: 8px; padding: 12px 20px 0; }
+  .vb .metricline b { font-size: 15px; color: #C8F36B; }
+  .vb .metricline span { font-size: 11px; color: #A79BBF; }
+
+  .vb .segmented { display: flex; gap: 4px; margin: 12px 20px 0; padding: 4px; border-radius: 999px; background: rgba(255, 255, 255, .05); }
+  .vb .segmented span { flex: 1; text-align: center; padding: 8px 0; font-size: 10.5px; letter-spacing: .8px; color: #A79BBF; border-radius: 999px; }
+  .vb .segmented span.on { background: #F6F1FF; color: #14101F; font-weight: 700; }
+
+  .vb .hero { position: relative; margin: 14px 20px 0; height: 248px; border-radius: 30px; background: linear-gradient(155deg, #241B36, #171322 62%, #12101C); border: 1px solid rgba(185, 167, 255, .18); overflow: hidden; }
+  .vb .hero .halo { position: absolute; inset: -40px; background: conic-gradient(from 210deg, transparent 0 210deg, rgba(124, 246, 255, .45) 300deg, transparent 360deg); filter: blur(14px); opacity: .55; }
+  .vb .hero .core { position: absolute; left: 50%; top: 50%; width: 118px; height: 118px; transform: translate(-50%, -50%); border-radius: 50%; background: radial-gradient(circle at 40% 32%, #7CF6FF, #6E5BB8 60%, #2A2040 100%); box-shadow: 0 0 60px rgba(124, 246, 255, .35); }
+  .vb .hero .core:after { content: ""; position: absolute; left: 50%; top: 50%; width: 26px; height: 26px; transform: translate(-50%, -50%); border-radius: 50%; background: #0C0A12; }
+  .vb .hero .chipfloat { position: absolute; padding: 7px 11px; border-radius: 999px; font-size: 9.5px; background: rgba(12, 10, 18, .78); border: 1px solid rgba(255, 255, 255, .12); backdrop-filter: blur(6px); }
+  .vb .hero .chipfloat b { color: #C8F36B; font-weight: 700; }
+  .vb .hero .c1 { left: 14px; top: 16px; }
+  .vb .hero .c2 { right: 14px; top: 54px; }
+  .vb .hero .c3 { left: 22px; bottom: 18px; }
+  .vb .hero .c4 { right: 18px; bottom: 22px; }
+  .vb .hero .dot2 { position: absolute; width: 10px; height: 10px; border-radius: 50%; background: #B9A7FF; box-shadow: 0 0 14px #B9A7FF; }
+  .vb .hero .d1 { left: 30%; top: 30%; }
+  .vb .hero .d2 { left: 72%; top: 70%; background: #7CF6FF; box-shadow: 0 0 14px #7CF6FF; }
+
+  .vb .actions { display: flex; gap: 8px; align-items: stretch; margin: 12px 20px 0; }
+  .vb .btn { display: flex; align-items: center; justify-content: center; gap: 7px; height: 46px; border-radius: 999px; font-size: 10.5px; letter-spacing: .7px; font-weight: 700; }
+  .vb .btn.primary { flex: 1.6; background: linear-gradient(120deg, #7CF6FF, #B9A7FF); color: #120F19; }
+  .vb .btn.tonal { flex: 1; background: rgba(185, 167, 255, .14); color: #E7DEFF; border: 1px solid rgba(185, 167, 255, .22); }
+
+  .vb .strips { display: flex; gap: 8px; margin: 12px 20px 0; overflow: hidden; }
+  .vb .strips .strip { flex: 0 0 47%; padding: 11px 12px; border-radius: 18px; background: #171322; border: 1px solid #2A2140; }
+  .vb .strip .who { font-size: 9px; color: #B9A7FF; letter-spacing: .5px; }
+  .vb .strip .what { margin-top: 4px; font-size: 12px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .vb .strip .meta { margin-top: 6px; font-size: 9px; color: #A79BBF; }
+  .vb .strip .meta b { color: #C8F36B; }
+
+  .vb .tabs { margin-top: auto; display: flex; align-items: center; gap: 2px; margin-left: 16px; margin-right: 16px; margin-bottom: 16px; padding: 6px; border-radius: 999px; background: rgba(23, 19, 34, .92); border: 1px solid #2A2140; }
+  .vb .tabs span { flex: 1; text-align: center; font-size: 9px; letter-spacing: .8px; color: #A79BBF; padding: 9px 0; border-radius: 999px; }
+  .vb .tabs span.active { background: #F6F1FF; color: #14101F; font-weight: 800; }
+
+  /* deck B */
+  .vb .vinylbox { position: relative; height: 320px; margin: 8px 20px 0; border-radius: 30px; background: radial-gradient(circle at 50% 45%, rgba(124, 246, 255, .20), transparent 55%), linear-gradient(160deg, #1E1830, #100D18); border: 1px solid rgba(185, 167, 255, .16); overflow: hidden; }
+  .vb .vinyl { position: absolute; left: 50%; top: 52%; width: 236px; height: 236px; transform: translate(-50%, -50%); border-radius: 50%; background: repeating-radial-gradient(circle, #0B0912 0 3px, #17131F 3px 4px); box-shadow: 0 20px 50px rgba(0,0,0,.6); }
+  .vb .vinyl:before { content: ""; position: absolute; inset: 28%; border-radius: 50%; background: linear-gradient(135deg, #7CF6FF, #B9A7FF 55%, #6E5BB8); }
+  .vb .vinyl:after { content: ""; position: absolute; left: 50%; top: 50%; width: 10px; height: 10px; transform: translate(-50%, -50%); border-radius: 50%; background: #0C0A12; }
+  .vb .arm { position: absolute; right: 28px; top: 30px; width: 4px; height: 118px; background: #3A3050; transform: rotate(24deg); transform-origin: top; border-radius: 2px; }
+  .vb .arm:before { content: ""; position: absolute; top: -7px; left: -5px; width: 14px; height: 14px; border-radius: 50%; background: #FFC24B; }
+  .vb .deckinfo { padding: 16px 20px 0; }
+  .vb .deckinfo .title { font-size: 25px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.15; }
+  .vb .deckinfo .artist { margin-top: 5px; font-size: 13px; color: #7CF6FF; }
+  .vb .tagrow { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+  .vb .tagrow span { font-size: 9.5px; padding: 5px 10px; border-radius: 999px; background: rgba(185, 167, 255, .12); color: #DCD2F5; border: 1px solid rgba(185, 167, 255, .2); }
+  .vb .persona { margin: 14px 20px 0; padding: 14px; border-radius: 22px; background: #171322; border: 1px solid #2A2140; }
+  .vb .persona .eyebrow { font-size: 8.5px; letter-spacing: 1.8px; color: #A79BBF; }
+  .vb .persona .name { margin-top: 5px; font-size: 14px; font-weight: 700; color: #B9A7FF; }
+  .vb .persona .quote { margin-top: 6px; font-size: 11px; line-height: 1.5; color: #B7ADC9; font-style: italic; }
+
+  /* ═══════════════════════════════════════════
+     C · АНАЛОГОВЫЙ ЖУРНАЛ
+     ═══════════════════════════════════════════ */
+  .vc .screen { background: #0A0A0B; color: #F4F1EA; }
+  .vc .status { color: #96918A; }
+  .vc .topbar { padding: 12px 22px 0; }
+  .vc .topbar .kicker { display: flex; justify-content: space-between; font-size: 9px; letter-spacing: 2.2px; color: #96918A; text-transform: uppercase; }
+  .vc .topbar h3 { margin: 10px 0 0; font-family: Georgia, "Times New Roman", serif; font-size: 38px; font-weight: 400; letter-spacing: -0.02em; line-height: 1; }
+  .vc .topbar .sub { margin-top: 7px; font-size: 10.5px; color: #96918A; letter-spacing: .4px; }
+  .vc .rule { height: 1px; background: #2A2A2C; margin: 14px 22px 0; }
+  .vc .lede { display: flex; gap: 10px; align-items: baseline; padding: 14px 22px 0; }
+  .vc .lede b { font-family: Georgia, serif; font-size: 34px; font-weight: 400; color: #D9A441; line-height: 1; }
+  .vc .lede span { font-size: 10px; letter-spacing: 1.4px; color: #96918A; text-transform: uppercase; }
+
+  .vc .sonar { position: relative; width: 250px; height: 250px; margin: 10px auto 4px; }
+  .vc .sonar .r { position: absolute; border: 1px solid #2A2A2C; border-radius: 50%; }
+  .vc .sonar .r1 { inset: 28%; }
+  .vc .sonar .r2 { inset: 16%; }
+  .vc .sonar .r3 { inset: 4%; }
+  .vc .sonar .r4 { inset: -4%; border-color: #3A3A3D; }
+  .vc .sonar .x { position: absolute; background: #2A2A2C; }
+  .vc .sonar .x.h { left: 4%; right: 4%; top: 50%; height: 1px; }
+  .vc .sonar .x.v { top: 4%; bottom: 4%; left: 50%; width: 1px; }
+  .vc .sonar .p { position: absolute; width: 5px; height: 5px; border-radius: 50%; background: #D9A441; transform: translate(-50%, -50%); }
+  .vc .sonar .p.hollow { background: transparent; border: 1px solid #8A6A2E; }
+  .vc .sonar .lbl { position: absolute; font-size: 7.5px; letter-spacing: 1px; color: #6F6A63; }
+  .vc .sonar .me { position: absolute; left: 50%; top: 50%; width: 6px; height: 6px; border-radius: 50%; background: #CFE9E4; transform: translate(-50%, -50%); box-shadow: 0 0 0 4px rgba(207, 233, 228, .12); }
+
+  .vc .row { display: flex; align-items: baseline; gap: 10px; padding: 11px 22px; border-top: 1px solid #1E1E20; }
+  .vc .row:last-of-type { border-bottom: 1px solid #1E1E20; }
+  .vc .row .idx { font-family: Consolas, monospace; font-size: 8.5px; color: #6F6A63; width: 16px; }
+  .vc .row .main { flex: 1; min-width: 0; }
+  .vc .row .persona { font-size: 8.5px; letter-spacing: .8px; color: #8A847B; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .vc .row .track { font-family: Georgia, serif; font-size: 16px; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .vc .row .res { font-family: Consolas, monospace; font-size: 13px; color: #D9A441; }
+  .vc .row .res small { display: block; font-size: 7px; color: #6F6A63; letter-spacing: .8px; text-align: right; }
+
+  .vc .tabs { margin-top: auto; display: flex; gap: 18px; padding: 14px 22px 20px; border-top: 1px solid #2A2A2C; }
+  .vc .tabs span { font-size: 8.5px; letter-spacing: 1.6px; color: #6F6A63; text-transform: uppercase; }
+  .vc .tabs span.active { color: #F4F1EA; border-bottom: 1px solid #D9A441; padding-bottom: 4px; }
+
+  /* deck C */
+  .vc .cover { position: relative; width: 214px; height: 214px; margin: 18px auto 0; border-radius: 50%; border: 1px solid #3A3A3D; }
+  .vc .cover:before { content: ""; position: absolute; inset: 10%; border-radius: 50%; border: 1px solid #2A2A2C; }
+  .vc .cover:after { content: ""; position: absolute; inset: 34%; border-radius: 50%; background: #1A1712; border: 1px solid #6F5730; }
+  .vc .cover .hole { position: absolute; left: 50%; top: 50%; width: 7px; height: 7px; border-radius: 50%; background: #0A0A0B; transform: translate(-50%, -50%); z-index: 2; }
+  .vc .cover .needle { position: absolute; right: 4px; top: 12px; width: 1px; height: 92px; background: #D9A441; transform: rotate(26deg); transform-origin: top; }
+  .vc .decktitle { padding: 18px 22px 0; }
+  .vc .decktitle .eyebrow { font-size: 8.5px; letter-spacing: 2px; color: #96918A; text-transform: uppercase; }
+  .vc .decktitle h4 { margin: 7px 0 0; font-family: Georgia, serif; font-size: 28px; font-weight: 400; line-height: 1.1; }
+  .vc .decktitle .artist { margin-top: 6px; font-size: 11px; letter-spacing: 1.4px; color: #D9A441; text-transform: uppercase; }
+  .vc .meta { display: flex; gap: 14px; padding: 14px 22px 0; font-family: Consolas, monospace; font-size: 8.5px; letter-spacing: .8px; color: #8A847B; text-transform: uppercase; }
+  .vc .quote { margin: 16px 22px 0; padding-top: 12px; border-top: 1px solid #1E1E20; font-family: Georgia, serif; font-style: italic; font-size: 12.5px; line-height: 1.6; color: #BDB6AB; }
+  .vc .links { display: flex; gap: 18px; padding: 18px 22px 0; }
+  .vc .links span { font-size: 8.5px; letter-spacing: 1.6px; text-transform: uppercase; color: #D9A441; border-bottom: 1px solid #6F5730; padding-bottom: 3px; }
+
+  /* ── comparison ── */
+  .compare { margin-top: 50px; border: 1px solid var(--page-line); border-radius: 26px; overflow: hidden; }
+  .compare h2 { margin: 0; padding: 22px 24px; font-size: 19px; border-bottom: 1px solid var(--page-line); }
+  table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  th, td { text-align: left; padding: 13px 16px; border-bottom: 1px solid var(--page-line); vertical-align: top; }
+  th { color: var(--page-dim); font-size: 10px; letter-spacing: 1.4px; text-transform: uppercase; font-weight: 600; }
+  td:first-child { color: var(--page-dim); width: 24%; }
+  tr:last-child td { border-bottom: none; }
+  td b { color: var(--page-text); font-weight: 600; }
+
+  .decision { margin-top: 40px; padding: 26px; border-radius: 26px; border: 1px solid rgba(56, 189, 248, .3); background: linear-gradient(150deg, rgba(56, 189, 248, .08), rgba(168, 85, 247, .06)); }
+  .decision h2 { margin: 0 0 10px; font-size: 20px; }
+  .decision p { margin: 0; color: #C3CBD8; font-size: 13px; line-height: 1.6; max-width: 880px; }
+  .decision .picks { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
+  .decision .picks span { padding: 9px 14px; border-radius: 999px; border: 1px solid rgba(255,255,255,.14); font-size: 11.5px; color: #E7EDF5; }
+
+  footer { margin-top: 34px; color: #66707E; font-size: 11.5px; line-height: 1.7; }
+
+  @media (max-width: 1200px) {
+    .stage-side { max-width: none; order: 2; }
+  }
+  @media (max-width: 520px) {
+    .page { padding: 24px 14px 60px; }
+    .phone { transform: scale(.92); transform-origin: top center; margin-bottom: -70px; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header class="masthead">
+    <div>
+      <div class="brand">ЭХО <span>· варианты дизайна 0.2</span></div>
+      <h1>Три направления для Android</h1>
+      <p>Один и тот же продукт, три разных характера: отполированный канон, Material&nbsp;3&nbsp;Expressive и редакционный минимализм. Макеты собраны на живых токенах ЭХО и готовы к переносу в Compose.</p>
+    </div>
+    <div class="trends">
+      <span>Material 3 Expressive</span>
+      <span>Edge-to-edge</span>
+      <span>Predictive back</span>
+      <span>Spring motion</span>
+      <span>Variable type</span>
+      <span>Glance widget</span>
+      <span>Adaptive layout</span>
+      <span>Accessibility AA</span>
+    </div>
+  </header>
+
+  <div class="legend-note">
+    <div><b>Как смотреть:</b> макеты в масштабе 390×844, как на телефоне.</div>
+    <div><b>Что оценивать:</b> характер, плотность, читаемость и цену внедрения.</div>
+    <div><b>Рекомендация:</b> A как база + моторика и типографика B.</div>
+  </div>
+
+  <!-- ══════════════════ A ══════════════════ -->
+  <section class="variant" id="a">
+    <div class="variant-head">
+      <div class="letter">A</div>
+      <div>
+        <h2>Ночной винил</h2>
+        <p>Эволюция текущего канона. Тёмное стекло, тонкие линии, сигнальный циан только на живом. Минимум изменений в коде — максимум доверия к уже собранным экранам.</p>
+      </div>
+      <span class="tag">эволюция · низкий риск</span>
+    </div>
+
+    <div class="stage">
+      <div class="stage-side">
+        <h3>Характер</h3>
+        <ul class="bullets">
+          <li>Тихий ночной инструмент: сонар — центр, карточки — второй план.</li>
+          <li>Моноширинные подписи и тонкая сетка дают «приборность».</li>
+          <li>Цвет — носитель смысла: циан = живое, янтарь = тайники, золото = синхрон.</li>
+          <li>Переходы 180–260 мс, мягкие fade/slide без отскоков.</li>
+        </ul>
+        <h3>Минусы</h3>
+        <ul class="bullets neg">
+          <li>Визуально близко к веб-версии — меньше «вау» на телефоне.</li>
+          <li>Плотный список карточек быстро утомляет на длинной дистанции.</li>
+        </ul>
+        <div class="meter">
+          <div><span>Цена работы</span><i><b style="width:18%"></b></i><em>низкая</em></div>
+          <div><span>Риск перегруза</span><i><b style="width:38%"></b></i><em>средний</em></div>
+          <div><span>Дух ЭХО</span><i><b style="width:94%"></b></i><em>высокий</em></div>
+        </div>
+      </div>
+
+      <div class="phone-wrap">
+        <!-- A · ЭФИР -->
+        <div class="phone va">
+          <div class="screen">
+            <div class="status"><span>09:41</span><span>▮ ▮ ▮</span></div>
+            <div class="topbar">
+              <div><h3>ЭФИР</h3><p>Сонар музыкального присутствия</p></div>
+              <div class="gear">⚙</div>
+            </div>
+            <div class="livelabel"><i></i> 4 в эфире · линия живая</div>
+
+            <div class="sonar">
+              <div class="cross"></div>
+              <div class="sweep"></div>
+              <span class="dot" style="--x:64%;--y:27%;--c:#38BDF8"></span>
+              <span class="dot" style="--x:31%;--y:38%;--c:#A855F7"></span>
+              <span class="dot ghost" style="--x:74%;--y:63%;--c:#FFB800"></span>
+              <span class="dot" style="--x:42%;--y:76%;--c:#34D399"></span>
+              <span class="me"></span>
+            </div>
+
+            <div class="legend">
+              <span><i style="background:#38BDF8"></i>СИГНАЛЫ 3</span>
+              <span><i style="background:#FFB800"></i>ТАЙНИКИ 1</span>
+              <span><i style="background:#FFD700"></i>ЛАГРАНЖ</span>
+            </div>
+
+            <div class="zonechips">
+              <span>Сретенка<small>4 · пост-панк</small></span>
+              <span>Покровка<small>2 · синти</small></span>
+              <span>Набережная<small>3 · эмбиент</small></span>
+            </div>
+
+            <div class="section">СИГНАЛЫ РЯДОМ</div>
+
+            <div class="card" style="--c:#38BDF8">
+              <div style="min-width:0;flex:1">
+                <div class="persona">Пилигрим неоновых панелек</div>
+                <div class="track">Молчат Дома — Судно</div>
+                <div class="chips"><span class="hot">87%</span><span>118 BPM</span><span>9A</span><span>Сретенка</span></div>
+              </div>
+              <div class="avatar"></div>
+              <div class="dist">~140 м</div>
+            </div>
+
+            <div class="card" style="--c:#A855F7">
+              <div style="min-width:0;flex:1">
+                <div class="persona">Странник сонных набережных</div>
+                <div class="track">Burial — Archangel</div>
+                <div class="chips"><span class="hot">74%</span><span>132 BPM</span><span>4A</span><span>Набережная</span></div>
+              </div>
+              <div class="avatar" style="--c:#A855F7"></div>
+              <div class="dist">~240 м</div>
+            </div>
+
+            <div class="card" style="--c:#FFB800">
+              <div style="min-width:0;flex:1">
+                <div class="persona">Призрачный след · 14 мин</div>
+                <div class="track">Кино — Группа крови</div>
+                <div class="chips"><span class="hot">68%</span><span>Покровка</span></div>
+              </div>
+              <div class="avatar" style="--c:#FFB800"></div>
+              <div class="dist">~410 м</div>
+            </div>
+
+            <div class="tabs">
+              <span class="active"><b>◉</b>ЭФИР</span><span><b>▷</b>ДЕКА</span><span><b>✦</b>ОТЗВУКИ</span><span><b>◇</b>ТАЙНИКИ</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- A · ДЕКА -->
+        <div class="phone va">
+          <div class="screen">
+            <div class="status"><span>09:41</span><span>▮ ▮ ▮</span></div>
+            <div class="topbar">
+              <div><h3>ДЕКА</h3><p>Сейчас на игле</p></div>
+              <div class="gear">⚙</div>
+            </div>
+            <div class="livelabel"><i></i> 4 в эфире · линия живая</div>
+
+            <div style="position:relative;width:250px;height:250px;margin:12px auto 0;">
+              <div style="position:absolute;inset:0;border-radius:50%;background:repeating-radial-gradient(circle,#0B0F16 0 3px,#1A2230 3px 4px);box-shadow:0 18px 40px rgba(0,0,0,.55);"></div>
+              <div style="position:absolute;inset:32%;border-radius:50%;background:linear-gradient(135deg,#38BDF8,#0284C7);border:2px solid #0D121B;"></div>
+              <div style="position:absolute;left:50%;top:50%;width:9px;height:9px;transform:translate(-50%,-50%);border-radius:50%;background:#07090E;z-index:2;"></div>
+              <div style="position:absolute;right:6px;top:16px;width:4px;height:96px;background:#334155;transform:rotate(24deg);transform-origin:top;border-radius:2px;"></div>
+              <div style="position:absolute;right:2px;top:10px;width:12px;height:12px;border-radius:50%;background:#FFB800;"></div>
+            </div>
+
+            <div style="padding:16px 22px 0;text-align:center;">
+              <div style="font-size:21px;font-weight:800;letter-spacing:.2px;">Молчат Дома — Судно</div>
+              <div style="margin-top:6px;font-size:14px;color:#38BDF8;">Альбом «Этажи» · 2018</div>
+              <div style="display:flex;gap:6px;justify-content:center;margin-top:12px;">
+                <span style="font-size:9.5px;padding:4px 9px;border-radius:999px;border:1px solid #334155;color:#B6C0CD;">Яндекс Музыка</span>
+                <span style="font-size:9.5px;padding:4px 9px;border-radius:999px;border:1px solid #334155;color:#B6C0CD;">Сретенка</span>
+              </div>
+            </div>
+
+            <div style="margin:18px 18px 0;padding:14px;border-radius:16px;background:#0D121B;border:1px solid #1E293B;">
+              <div style="font-size:9px;letter-spacing:1.6px;color:#64748B;font-family:Consolas,monospace;">АРХЕТИП ВЕЧЕРА</div>
+              <div style="margin-top:6px;font-size:13px;font-weight:700;color:#38BDF8;">Пилигрим неоновых панелек</div>
+              <div style="margin-top:7px;font-size:11px;line-height:1.5;color:#85909E;font-style:italic;">Слушает пост-панк в тумане панелек, где фонари гудят на частоте 50 герц.</div>
+            </div>
+
+            <div style="margin:10px 18px 0;padding:13px 14px;border-radius:16px;background:#0D121B;border:1px solid #1E293B;display:flex;align-items:center;gap:10px;">
+              <div style="flex:1;">
+                <div style="font-size:12.5px;font-weight:700;">Присутствие в эфире</div>
+                <div style="font-size:10px;color:#64748B;margin-top:2px;">Соседи слышат ваш сигнал</div>
+              </div>
+              <div style="width:42px;height:24px;border-radius:999px;background:#00F0FF;display:flex;align-items:center;justify-content:flex-end;padding:2px;">
+                <div style="width:20px;height:20px;border-radius:50%;background:#07090E;"></div>
+              </div>
+            </div>
+
+            <div style="display:flex;gap:7px;margin:12px 18px 0;">
+              <div style="flex:1;height:42px;border-radius:11px;background:rgba(30,41,59,.4);border:1px solid #334155;display:grid;place-items:center;font-size:10px;color:#38BDF8;">ВОЛНА</div>
+              <div style="flex:1;height:42px;border-radius:11px;background:rgba(30,41,59,.4);border:1px solid #334155;display:grid;place-items:center;font-size:10px;color:#38BDF8;">ИГЛА</div>
+              <div style="flex:1;height:42px;border-radius:11px;background:rgba(30,41,59,.4);border:1px solid #334155;display:grid;place-items:center;font-size:10px;color:#38BDF8;">ВРУЧНУЮ</div>
+            </div>
+
+            <div class="tabs">
+              <span>◉ ЭФИР</span><span class="active"><b>▷</b>ДЕКА</span><span>✦ ОТЗВУКИ</span><span>◇ ТАЙНИКИ</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════ B ══════════════════ -->
+  <section class="variant" id="b">
+    <div class="variant-head">
+      <div class="letter">B</div>
+      <div>
+        <h2>Экспрессивный сонар</h2>
+        <p>Material&nbsp;3&nbsp;Expressive: крупная типографика, тональные контейнеры, пилюли и «живая» геометрия. Телефон звучит как прибор, а не как список.</p>
+      </div>
+      <span class="tag">M3 Expressive · средний риск</span>
+    </div>
+
+    <div class="stage">
+      <div class="stage-side">
+        <h3>Характер</h3>
+        <ul class="bullets">
+          <li>Герой-сонар с плавающими метриками вместо мелкой легенды.</li>
+          <li>Крупные цифры и короткие подписи — читается с одного взгляда.</li>
+          <li>Пилюльная навигация, tonal-карточки, группа кнопок вместо ряда текста.</li>
+          <li>Пружинные переходы 220–320 мс, shape-morph для чипов.</li>
+        </ul>
+        <h3>Минусы</h3>
+        <ul class="bullets neg">
+          <li>Легко перейти в «ещё одно соцмедиа» — нужна дисциплина по цвету.</li>
+          <li>Больше работы: новые компоненты, motion, переверстка списков.</li>
+        </ul>
+        <div class="meter">
+          <div><span>Цена работы</span><i><b style="width:62%"></b></i><em>средняя</em></div>
+          <div><span>Риск перегруза</span><i><b style="width:58%"></b></i><em>средний</em></div>
+          <div><span>Дух ЭХО</span><i><b style="width:82%"></b></i><em>хороший</em></div>
+        </div>
+      </div>
+
+      <div class="phone-wrap">
+        <!-- B · ЭФИР -->
+        <div class="phone vb">
+          <div class="screen">
+            <div class="status"><span>09:41</span><span>▮ ▮ ▮</span></div>
+            <div class="topbar">
+              <div class="eyebrow">сонар · сретенка</div>
+              <div class="row">
+                <h3>Эфир</h3>
+                <div class="gear">⚙</div>
+              </div>
+            </div>
+            <div class="metricline"><b>4</b><span>голоса рядом · резонанс до 87%</span></div>
+
+            <div class="segmented"><span class="on">СОНАР</span><span>КВАРТАЛЫ</span><span>ТАЙНИКИ</span></div>
+
+            <div class="hero">
+              <div class="halo"></div>
+              <div class="core"></div>
+              <span class="dot2 d1"></span>
+              <span class="dot2 d2"></span>
+              <span class="chipfloat c1">87% · Судно</span>
+              <span class="chipfloat c2">74% · Archangel</span>
+              <span class="chipfloat c3"><b>+3</b> квартала</span>
+              <span class="chipfloat c4">тайник · 240 м</span>
+            </div>
+
+            <div class="actions">
+              <div class="btn primary">◉ ОТКРЫТЬ СОНАР</div>
+              <div class="btn tonal">✦ ОТКЛИК</div>
+            </div>
+
+            <div class="strips">
+              <div class="strip">
+                <div class="who">ПИЛИГРИМ ПАНЕЛЕК</div>
+                <div class="what">Молчат Дома — Судно</div>
+                <div class="meta"><b>87%</b> · 118 BPM · 9A</div>
+              </div>
+              <div class="strip">
+                <div class="who">СТРАННИК НАБЕРЕЖНЫХ</div>
+                <div class="what">Burial — Archangel</div>
+                <div class="meta"><b>74%</b> · 132 BPM · 4A</div>
+              </div>
+            </div>
+
+            <div class="tabs">
+              <span class="active">ЭФИР</span><span>ДЕКА</span><span>ОТЗВУКИ</span><span>ТАЙНИКИ</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- B · ДЕКА -->
+        <div class="phone vb">
+          <div class="screen">
+            <div class="status"><span>09:41</span><span>▮ ▮ ▮</span></div>
+            <div class="topbar">
+              <div class="eyebrow">дека · 33⅓</div>
+              <div class="row">
+                <h3>Дека</h3>
+                <div class="gear">⚙</div>
+              </div>
+            </div>
+
+            <div class="vinylbox">
+              <div class="vinyl"></div>
+              <div class="arm"></div>
+            </div>
+
+            <div class="deckinfo">
+              <div class="title">Судно</div>
+              <div class="artist">Молчат Дома</div>
+              <div class="tagrow">
+                <span>Яндекс Музыка</span><span>Пост-панк</span><span>118 BPM</span><span>9A</span>
+              </div>
+            </div>
+
+            <div class="actions" style="margin-top:14px;">
+              <div class="btn primary">🌊 ВОЛНА В ЭФИР</div>
+              <div class="btn tonal">≋ ИГЛА</div>
+            </div>
+
+            <div class="persona">
+              <div class="eyebrow">АРХЕТИП ВЕЧЕРА</div>
+              <div class="name">Пилигрим неоновых панелек</div>
+              <div class="quote">Слушает пост-панк в тумане панелек, где фонари гудят на частоте 50 герц.</div>
+            </div>
+
+            <div class="tabs">
+              <span>ЭФИР</span><span class="active">ДЕКА</span><span>ОТЗВУКИ</span><span>ТАЙНИКИ</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════ C ══════════════════ -->
+  <section class="variant" id="c">
+    <div class="variant-head">
+      <div class="letter">C</div>
+      <div>
+        <h2>Аналоговый журнал</h2>
+        <p>Редакционный минимализм: крупная антиква, тонкие линейки, ноль свечения. ЭХО как печатный журнал о городе, который слушают.</p>
+      </div>
+      <span class="tag">editorial · высокий риск</span>
+    </div>
+
+    <div class="stage">
+      <div class="stage-side">
+        <h3>Характер</h3>
+        <ul class="bullets">
+          <li>Текст — главный герой: заголовки антиквой, метаданные моно.</li>
+          <li>Список сигналов — редакционные строки с номерами и линейками, без карточек.</li>
+          <li>Сонар — чертёж: окружности, крест, подписи координат.</li>
+          <li>Цвет только один: тёплый янтарь как типографская краска.</li>
+        </ul>
+        <h3>Минусы</h3>
+        <ul class="bullets neg">
+          <li>Требует переписать все компоненты и подобрать шрифтовую пару.</li>
+          <li>Меньше «жизни»: анимации и живой эфир ощущаются слабее.</li>
+          <li>Высокий риск, что на маленьком экране станет слишком сухо.</li>
+        </ul>
+        <div class="meter">
+          <div><span>Цена работы</span><i><b style="width:88%"></b></i><em>высокая</em></div>
+          <div><span>Риск перегруза</span><i><b style="width:24%"></b></i><em>низкий</em></div>
+          <div><span>Дух ЭХО</span><i><b style="width:66%"></b></i><em>спорный</em></div>
+        </div>
+      </div>
+
+      <div class="phone-wrap">
+        <!-- C · ЭФИР -->
+        <div class="phone vc">
+          <div class="screen">
+            <div class="status"><span>09:41</span><span>▮ ▮ ▮</span></div>
+            <div class="topbar">
+              <div class="kicker"><span>ЭХО · вечер</span><span>09:41</span></div>
+              <h3>Эфир</h3>
+              <div class="sub">Сретенка · 16 ноября · 4 голоса</div>
+            </div>
+            <div class="rule"></div>
+            <div class="lede"><b>4</b><span>музыки звучит<br>в радиусе слышимости</span></div>
+
+            <div class="sonar">
+              <div class="r r1"></div><div class="r r2"></div><div class="r r3"></div><div class="r r4"></div>
+              <div class="x h"></div><div class="x v"></div>
+              <span class="p" style="left:64%;top:27%"></span>
+              <span class="p" style="left:31%;top:38%"></span>
+              <span class="p hollow" style="left:74%;top:63%"></span>
+              <span class="p" style="left:42%;top:76%"></span>
+              <span class="me"></span>
+              <span class="lbl" style="left:8%;top:46%">С · 0°</span>
+              <span class="lbl" style="right:6%;top:46%">В · 180°</span>
+              <span class="lbl" style="left:46%;top:2%">СЕВЕР</span>
+            </div>
+
+            <div class="row">
+              <span class="idx">01</span>
+              <div class="main">
+                <div class="persona">Пилигрим неоновых панелек</div>
+                <div class="track">Молчат Дома — Судно</div>
+              </div>
+              <div class="res">87<small>РЕЗОНАНС</small></div>
+            </div>
+            <div class="row">
+              <span class="idx">02</span>
+              <div class="main">
+                <div class="persona">Странник сонных набережных</div>
+                <div class="track">Burial — Archangel</div>
+              </div>
+              <div class="res">74<small>РЕЗОНАНС</small></div>
+            </div>
+            <div class="row">
+              <span class="idx">03</span>
+              <div class="main">
+                <div class="persona">Призрачный след · 14 мин</div>
+                <div class="track">Кино — Группа крови</div>
+              </div>
+              <div class="res">68<small>РЕЗОНАНС</small></div>
+            </div>
+
+            <div class="tabs">
+              <span class="active">ЭФИР</span><span>ДЕКА</span><span>ОТЗВУКИ</span><span>ТАЙНИКИ</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- C · ДЕКА -->
+        <div class="phone vc">
+          <div class="screen">
+            <div class="status"><span>09:41</span><span>▮ ▮ ▮</span></div>
+            <div class="topbar">
+              <div class="kicker"><span>ЭХО · дека</span><span>33⅓</span></div>
+              <h3>Дека</h3>
+              <div class="sub">Сейчас на игле · Яндекс Музыка</div>
+            </div>
+            <div class="rule"></div>
+
+            <div class="cover">
+              <span class="hole"></span>
+              <span class="needle"></span>
+            </div>
+
+            <div class="decktitle">
+              <div class="eyebrow">альбом «Этажи» · 2018</div>
+              <h4>Судно</h4>
+              <div class="artist">Молчат Дома</div>
+            </div>
+
+            <div class="meta"><span>118 BPM</span><span>9A</span><span>~140 М</span><span>СРЕТЕНКА</span></div>
+
+            <div class="quote">Слушает пост-панк в тумане панелек, где фонари гудят на частоте 50 герц. Кассета перемотана на вторую сторону.</div>
+
+            <div class="links">
+              <span>Синхрон иглы</span><span>В эфир</span><span>В летопись</span>
+            </div>
+
+            <div class="tabs">
+              <span>ЭФИР</span><span class="active">ДЕКА</span><span>ОТЗВУКИ</span><span>ТАЙНИКИ</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════ compare ══════════════════ -->
+  <section class="compare">
+    <h2>Как выбрать</h2>
+    <table>
+      <thead>
+        <tr><th>Критерий</th><th>A · Ночной винил</th><th>B · Экспрессивный сонар</th><th>C · Аналоговый журнал</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Настроение</td><td>Тихий прибор, ночь, точность</td><td>Живой инструмент, крупные акценты</td><td>Журнал о городе, бумага и тушь</td></tr>
+        <tr><td>Что меняется в коде</td><td>Почти ничего: шлифовка компонентов</td><td>Новые компоненты, motion, сетки</td><td>Полный редизайн UI-слоя</td></tr>
+        <tr><td>Сильные экраны</td><td>ЭФИР, паспорт сигнала</td><td>ДЕКА, онбординг, виджет</td><td>ЭФИР-список, ОТЗВУКИ</td></tr>
+        <tr><td>Слабые места</td><td>Плотность, мало эмоций</td><td>Риск пестроты и «соцсети»</td><td>Слабая динамика живого эфира</td></tr>
+        <tr><td>Что взять в основу</td><td><b>Структура и токены</b></td><td><b>Типографика и motion</b></td><td><b>Идея редакционных строк</b></td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="decision">
+    <h2>Моя рекомендация</h2>
+    <p>Взять <b>A</b> как базу: он уже совпадает с текущим кодом и не ломает канон. Добавить из <b>B</b> три вещи — крупную метрику в шапке ЭФИРА, пилюльную навигацию и пружинные переходы. Из <b>C</b> забрать только идею редакционных строк для длинного списка сигналов. Так получается «ЭХО 0.2»: спокойное, но современное.</p>
+    <div class="picks">
+      <span>Вариант A целиком</span>
+      <span>Гибрид A + motion/типографика B</span>
+      <span>Вариант B целиком</span>
+      <span>Вариант C целиком</span>
+      <span>Свой микс</span>
+    </div>
+  </section>
+
+  <footer>
+    Файл: <b>docs/design/variants-0.2.html</b> · макеты статические, но повторяют реальные токены, тексты и плотность<br>
+    Следующий шаг: выбрать направление — соберу его экраны в Compose и обновлю дизайн-систему.
+  </footer>
+</div>
+</body>
+</html>
