@@ -109,5 +109,36 @@ class JunkFilterTest(unittest.TestCase):
         self.assertFalse(is_junk_track("Ray Wylie Hubbard", "Choctaw Bingo"))
 
 
+class MusicDbTest(unittest.TestCase):
+    def test_itunes_mapping(self) -> None:
+        from server.musicdb import ITUNES_GENRES
+
+        self.assertEqual("rock", ITUNES_GENRES["rock"])
+        self.assertEqual("indie", ITUNES_GENRES["alternative"])
+        self.assertEqual("folk", ITUNES_GENRES["world"])
+        self.assertEqual("electronic", ITUNES_GENRES["electronic"])
+
+    def test_artist_matching_is_forgiving(self) -> None:
+        from server.musicdb import _same_artist, _same_title
+
+        self.assertTrue(_same_artist("Munknörr", "Munknorr"))
+        self.assertTrue(_same_artist("The Devil and the Almighty Blues",
+                                     "The Devil & the Almighty Blues"))
+        self.assertTrue(_same_title("Vanir", "Vanir"))
+        self.assertFalse(_same_title("Vanir", "Helvegen"))
+
+
+class EnrichmentClaimTest(unittest.TestCase):
+    def test_claim_is_exclusive(self) -> None:
+        from server.echo_server import _claim_enrichment, _release_enrichment
+
+        key = "тест|claim|key"
+        self.assertTrue(_claim_enrichment(key))
+        self.assertFalse(_claim_enrichment(key))
+        _release_enrichment(key)
+        self.assertTrue(_claim_enrichment(key))
+        _release_enrichment(key)
+
+
 if __name__ == "__main__":
     unittest.main()

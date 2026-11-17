@@ -196,14 +196,15 @@ private fun AirPreview() {
                 syncedTargets = emptySet(),
                 myColorHex = 0xFF38BDF8,
                 isDawn = false,
-                zoneCount = demoZones.size,
                 onSignalClick = {},
                 zoom = 1f,
                 onZoom = {},
-                beam = ResonanceBeam(
-                    angleDegrees = 42f,
-                    distanceRatio = 0.63f,
-                    timeMillis = { 12_400L },
+                beams = listOf(
+                    ResonanceBeam(
+                        angleDegrees = 42f,
+                        distanceRatio = 0.63f,
+                        timeMillis = { 12_400L },
+                    ),
                 ),
             )
             Spacer(modifier = Modifier.height(10.dp))

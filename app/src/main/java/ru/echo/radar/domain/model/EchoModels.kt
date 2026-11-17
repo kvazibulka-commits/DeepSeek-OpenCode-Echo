@@ -45,7 +45,8 @@ data class EchoSignal(
 ) {
     /** Жанр пришёл из плеера или каталога — его можно показывать без оговорок. */
     val hasTrustedGenre: Boolean
-        get() = genreOrigin == "player" || genreOrigin == "yandex" || genreOrigin == "catalog"
+        get() = genreOrigin == "player" || genreOrigin == "yandex" ||
+            genreOrigin == "catalog" || genreOrigin == "itunes"
 }
 
 data class EchoCapsule(

@@ -51,7 +51,7 @@ fun EchoSonar(
     onSignalClick: (EchoSignal) -> Unit,
     modifier: Modifier = Modifier,
     zoom: Float = 1f,
-    beam: ResonanceBeam? = null,
+    beams: List<ResonanceBeam> = emptyList(),
 ) {
     val transition = rememberInfiniteTransition(label = "sonar")
     val sweep by transition.animateFloat(
@@ -214,7 +214,7 @@ fun EchoSonar(
             )
         }
 
-        beam?.let { string ->
+        beams.forEach { string ->
             val target = sonarPosition(string.angleDegrees, string.distanceRatio, center, maxR)
             val dx = target.x - center.x
             val dy = target.y - center.y
@@ -223,20 +223,20 @@ fun EchoSonar(
                 val t = string.timeMillis() / 1000f
                 val nx = -dy / length
                 val ny = dx / length
-                val segments = 44
-                val breath = 0.62f + 0.38f * abs(sin(t * 0.41f)).toFloat()
-                val baseAmp = 5.4.dp.toPx() * breath
+                val segments = 34
+                val breath = 0.72f + 0.28f * abs(sin(t * 0.16f)).toFloat()
+                val baseAmp = 2.3.dp.toPx() * breath
 
                 fun curve(moment: Float, scale: Float): Path {
                     val path = Path()
                     for (index in 0..segments) {
                         val s = index / segments.toFloat()
                         val envelope = sin(PI * s).toFloat()
-                        // Неоднородная реверберация: три несоизмеримые моды.
+                        // Медленная неоднородная волна: три несоизмеримые моды.
                         val wobble =
-                            0.56f * sin(2f * PI * (3.1f * s) - 2.3f * moment).toFloat() +
-                                0.29f * sin(2f * PI * (5.7f * s) + 3.7f * moment + 1.3f).toFloat() +
-                                0.15f * sin(2f * PI * (8.3f * s) - 5.9f * moment + 2.1f).toFloat()
+                            0.60f * sin(2f * PI * (1.6f * s) - 0.45f * moment).toFloat() +
+                                0.28f * sin(2f * PI * (2.7f * s) + 0.72f * moment + 1.3f).toFloat() +
+                                0.12f * sin(2f * PI * (3.9f * s) - 1.05f * moment + 2.1f).toFloat()
                         val offset = baseAmp * scale * envelope * wobble
                         val point = Offset(
                             center.x + dx * s + nx * offset,
@@ -250,9 +250,9 @@ fun EchoSonar(
 
                 val brush = Brush.linearGradient(
                     colors = listOf(
-                        EchoColors.SignalCyan.copy(alpha = 0.35f),
-                        EchoColors.SignalCyan.copy(alpha = 0.75f),
-                        EchoColors.Gold.copy(alpha = 0.95f),
+                        EchoColors.SignalCyan.copy(alpha = 0.30f),
+                        EchoColors.SignalCyan.copy(alpha = 0.65f),
+                        EchoColors.Gold.copy(alpha = 0.90f),
                     ),
                     start = center,
                     end = target,
@@ -268,32 +268,32 @@ fun EchoSonar(
 
                 // Эхо: два запаздывающих призрака струны.
                 drawPath(
-                    path = curve(t - 0.83f, 1.75f),
-                    color = EchoColors.SignalCyan.copy(alpha = 0.07f),
-                    style = Stroke(width = 3.4.dp.toPx(), cap = StrokeCap.Round),
+                    path = curve(t - 1.6f, 1.42f),
+                    color = EchoColors.SignalCyan.copy(alpha = 0.06f),
+                    style = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round),
                 )
                 drawPath(
-                    path = curve(t - 0.41f, 1.32f),
-                    color = EchoColors.SignalCyan.copy(alpha = 0.15f),
-                    style = Stroke(width = 2.6.dp.toPx(), cap = StrokeCap.Round),
+                    path = curve(t - 0.8f, 1.20f),
+                    color = EchoColors.SignalCyan.copy(alpha = 0.10f),
+                    style = Stroke(width = 2.2.dp.toPx(), cap = StrokeCap.Round),
                 )
 
                 // Сама струна.
                 drawPath(
                     path = curve(t, 1f),
                     brush = brush,
-                    style = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Round),
+                    style = Stroke(width = 1.6.dp.toPx(), cap = StrokeCap.Round),
                 )
 
-                val glow = 0.5f + 0.5f * sin(t * 1.7f).toFloat()
+                val glow = 0.5f + 0.5f * sin(t * 1.1f).toFloat()
                 drawCircle(
                     color = EchoColors.Gold.copy(alpha = 0.16f + 0.12f * glow),
-                    radius = 11.dp.toPx() + 3.dp.toPx() * glow,
+                    radius = 10.dp.toPx() + 2.dp.toPx() * glow,
                     center = target,
                 )
                 drawCircle(
                     color = EchoColors.Gold.copy(alpha = 0.9f),
-                    radius = 3.2.dp.toPx(),
+                    radius = 3.dp.toPx(),
                     center = target,
                 )
             }

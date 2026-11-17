@@ -267,12 +267,11 @@ fun EchoHeroSonarCard(
     syncedTargets: Set<String>,
     myColorHex: Long,
     isDawn: Boolean,
-    zoneCount: Int,
     onSignalClick: (EchoSignal) -> Unit,
     modifier: Modifier = Modifier,
     zoom: Float = 1f,
     onZoom: (Float) -> Unit = {},
-    beam: ResonanceBeam? = null,
+    beams: List<ResonanceBeam> = emptyList(),
 ) {
     val ranked = signals.sortedByDescending { it.compatibility }
     val strongest = ranked.firstOrNull()
@@ -309,7 +308,7 @@ fun EchoHeroSonarCard(
             onSignalClick = onSignalClick,
             modifier = Modifier.fillMaxWidth(0.82f),
             zoom = zoom,
-            beam = beam,
+            beams = beams,
         )
 
         if (strongest != null) {
@@ -330,13 +329,6 @@ fun EchoHeroSonarCard(
                     .padding(end = 14.dp, top = 52.dp),
             )
         }
-        EchoGlowChip(
-            text = "$zoneCount ${pluralRu(zoneCount, "квартал", "квартала", "кварталов")} в эфире",
-            color = EchoColors.Gold,
-            modifier = Modifier
-                .align(Alignment.BottomStart)
-                .padding(start = 14.dp, bottom = 18.dp),
-        )
         EchoGlowChip(
             text = nearestCapsule?.let { "тайник · ${it.distanceMeters} м" } ?: "тайников нет",
             color = EchoColors.Amber,

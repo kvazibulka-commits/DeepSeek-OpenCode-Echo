@@ -28,6 +28,7 @@ except ImportError:
 ORIGIN_LABELS = {
     "player": "жанр из плеера",
     "yandex": "жанр из Яндекс Музыки",
+    "itunes": "жанр из iTunes",
     "catalog": "жанр по каталогу ЭХО",
     "guess": "жанр — предположение",
     "demo": "демо-маяк",

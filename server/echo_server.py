@@ -31,7 +31,7 @@ from datetime import datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 try:
-    from . import ai
+    from . import ai, musicdb
     from .genres import GenreInfo, genre_label, origin_label, resolve_genre
     from .personas import persona_for
     from .resonance import (
@@ -43,6 +43,7 @@ try:
     )
 except ImportError:  # запуск как `python server/echo_server.py`
     import ai
+    import musicdb
     from genres import GenreInfo, genre_label, origin_label, resolve_genre
     from personas import persona_for
     from resonance import (
@@ -118,6 +119,9 @@ DEMO_ENABLED = os.environ.get("ECHO_DEMO_SIGNALS", "1") != "0"
 DEMO_MATCH_ID = "sig_demo_match"
 DEMO_MISMATCH_ID = "sig_demo_mismatch"
 DEMO_IDS = (DEMO_MATCH_ID, DEMO_MISMATCH_ID)
+
+DEMO_CAPSULE_ENABLED = os.environ.get("ECHO_DEMO_CAPSULE", "1") != "0"
+DEMO_CAPSULE_ID = "cap_demo"
 
 
 # ── Конфиг ───────────────────────────────────────────────────────────────────
@@ -311,6 +315,12 @@ CREATE TABLE IF NOT EXISTS track_meta (
     model TEXT DEFAULT '',
     updated_at REAL DEFAULT 0
 );
+CREATE TABLE IF NOT EXISTS track_genre (
+    key TEXT PRIMARY KEY,
+    genre TEXT DEFAULT '',
+    origin TEXT DEFAULT '',
+    updated_at REAL DEFAULT 0
+);
 """
 
 
@@ -424,6 +434,40 @@ def ensure_demo_signals() -> None:
             conn.close()
 
 
+def ensure_demo_capsule() -> None:
+    """Один тестовый тайник: его видно всегда, пока тайники не скрыты."""
+    if not DEMO_CAPSULE_ENABLED:
+        return
+    with DB_LOCK:
+        conn = connect()
+        try:
+            present = conn.execute(
+                "SELECT id FROM capsules WHERE id = ?", (DEMO_CAPSULE_ID,)
+            ).fetchone()
+            if present:
+                return
+            lat, lon = zone_coords("Вечерняя улица", DEMO_CAPSULE_ID)
+            conn.execute(
+                """
+                INSERT OR REPLACE INTO capsules (
+                    id, creator_id, artist, title, album, mood_label, persona_title,
+                    zone_name, secret_message, distance_meters, angle_degrees,
+                    distance_ratio, compatibility_percent, is_unlocked, is_venue,
+                    venue_name, min_resonance, secret_perk, lat, lon, created_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 0, '', 0, '', ?, ?, ?)
+                """,
+                (
+                    DEMO_CAPSULE_ID, "echo_demo", "ЭХО", "Тёплый тайник", "",
+                    "демо-тайник", "Тайник у вечерней улицы", "Вечерняя улица",
+                    "Тестовый тайник: открой его волной.", 84, 122.0, 0.5, 91,
+                    lat, lon, time.time(),
+                ),
+            )
+            conn.commit()
+        finally:
+            conn.close()
+
+
 def record_history(
     conn: sqlite3.Connection,
     device_id: str,
@@ -449,9 +493,67 @@ def record_history(
     )
 
 
-# ── GigaChat: фоновое обогащение архетипов ───────────────────────────────────
+# ── Фоновое обогащение: жанр из iTunes и архетип из GigaChat ─────────────────
 
-AI_QUEUE: "queue.Queue[tuple[str, str, str, str, str, str]]" = queue.Queue(maxsize=48)
+ENRICH_QUEUE: "queue.Queue[tuple[str, str, str, str, str, str]]" = queue.Queue(maxsize=48)
+INFLIGHT_LOCK = threading.Lock()
+INFLIGHT: set[str] = set()
+
+
+def _claim_enrichment(key: str) -> bool:
+    """Один трек — одна фоновая задача, даже если клиент прислал его дважды."""
+    if not key:
+        return False
+    with INFLIGHT_LOCK:
+        if key in INFLIGHT:
+            return False
+        INFLIGHT.add(key)
+        return True
+
+
+def _release_enrichment(key: str) -> None:
+    if not key:
+        return
+    with INFLIGHT_LOCK:
+        INFLIGHT.discard(key)
+
+
+def genre_cache_get(key: str) -> GenreInfo | None:
+    if not key:
+        return None
+    with DB_LOCK:
+        conn = connect()
+        try:
+            row = conn.execute(
+                "SELECT genre, origin FROM track_genre WHERE key = ?", (key,)
+            ).fetchone()
+        finally:
+            conn.close()
+    if not row or not row["genre"]:
+        return None
+    return GenreInfo(row["genre"], genre_label(row["genre"]), row["origin"] or "itunes")
+
+
+def genre_cache_put(key: str, info: GenreInfo) -> None:
+    if not key or not info.genre:
+        return
+    with DB_LOCK:
+        conn = connect()
+        try:
+            conn.execute(
+                """
+                INSERT OR REPLACE INTO track_genre (key, genre, origin, updated_at)
+                VALUES (?, ?, ?, ?)
+                """,
+                (key, info.genre, info.origin, time.time()),
+            )
+            conn.execute(
+                "DELETE FROM track_genre WHERE key NOT IN"
+                " (SELECT key FROM track_genre ORDER BY updated_at DESC LIMIT 2000)"
+            )
+            conn.commit()
+        finally:
+            conn.close()
 
 
 def ai_cache_get(key: str) -> dict | None:
@@ -503,50 +605,101 @@ def ai_cache_put(key: str, result: dict) -> None:
             conn.close()
 
 
-def _ai_worker() -> None:
-    while True:
-        task = AI_QUEUE.get()
+def _update_signal(
+    device_id: str,
+    artist: str,
+    title: str,
+    fields: dict,
+) -> None:
+    if not fields:
+        return
+    assignments = ", ".join(f"{name} = ?" for name in fields)
+    values = list(fields.values()) + [device_id, artist, title]
+    with DB_LOCK:
+        conn = connect()
         try:
-            device_id, artist, title, album, label, key = task
-            result = ai.generate(artist, title, album, label)
-            if not result:
-                continue
-            ai_cache_put(key, result)
-            with DB_LOCK:
-                conn = connect()
-                try:
-                    conn.execute(
-                        """
-                        UPDATE devices
-                        SET persona_title = ?, persona_observation = ?, ai_model = ?
-                        WHERE id = ? AND artist = ? AND title = ?
-                        """,
-                        (
-                            result["archetype"],
-                            result["observation"],
-                            result.get("model", ""),
-                            device_id,
-                            artist,
-                            title,
-                        ),
-                    )
-                    conn.commit()
-                finally:
-                    conn.close()
-            logger.info("GigaChat: %s — %s → %s", artist, title, result["archetype"])
-        except Exception as exc:
-            logger.debug("GigaChat worker: %s", exc)
+            conn.execute(
+                f"UPDATE devices SET {assignments} WHERE id = ? AND artist = ? AND title = ?",
+                values,
+            )
+            conn.commit()
         finally:
-            AI_QUEUE.task_done()
+            conn.close()
+
+
+def _enrich_worker() -> None:
+    while True:
+        task = ENRICH_QUEUE.get()
+        key = ""
+        try:
+            device_id, artist, title, album, genre, key = task
+
+            if not genre or genre == "unknown":
+                cached_genre = genre_cache_get(key)
+                found = cached_genre or musicdb.lookup_genre(artist, title)
+                if found:
+                    if not cached_genre:
+                        genre_cache_put(key, found)
+                    genre = found.genre
+                    acoustics = infer_acoustics(artist, title, album, genre=found.genre)
+                    persona = persona_for(
+                        artist, title, album, acoustics, found.genre, found.label
+                    )
+                    _update_signal(
+                        device_id,
+                        artist,
+                        title,
+                        {
+                            "genre": found.genre,
+                            "genre_origin": found.origin,
+                            "persona_title": persona["personaTitle"],
+                            "persona_observation": persona["personaObservation"],
+                            "mood_label": persona["moodLabel"],
+                            "color_hex": ensure_color(persona["colorHex"]),
+                            "avatar_petals": int(persona["avatarPetals"]),
+                        },
+                    )
+
+            if not ai.available():
+                continue
+
+            label = genre_label(genre) if genre else ""
+            cached_ai = ai_cache_get(key)
+            if cached_ai:
+                result = cached_ai
+            else:
+                result = ai.generate(artist, title, album, label)
+                if not result:
+                    continue
+                ai_cache_put(key, result)
+                logger.info(
+                    "GigaChat: %s — %s → %s", artist, title, result["archetype"]
+                )
+            _update_signal(
+                device_id,
+                artist,
+                title,
+                {
+                    "persona_title": result["archetype"],
+                    "persona_observation": result["observation"],
+                    "ai_model": result.get("model", ""),
+                },
+            )
+        except Exception as exc:
+            logger.debug("Обогащение: %s", exc)
+        finally:
+            _release_enrichment(key)
+            ENRICH_QUEUE.task_done()
             time.sleep(1.0)
 
 
-def start_ai_worker() -> None:
-    if not ai.available():
-        logger.info("GigaChat выключен: нет ECHO_GIGACHAT_CLIENT_ID/SECRET")
-        return
-    threading.Thread(target=_ai_worker, daemon=True).start()
-    logger.info("GigaChat включён: модель %s", ai.model_name())
+def start_enrichment() -> None:
+    threading.Thread(target=_enrich_worker, daemon=True).start()
+    if ai.available():
+        logger.info("GigaChat включён: модель %s", ai.model_name())
+    else:
+        logger.info("GigaChat выключен: нет ECHO_GIGACHAT_AUTH_KEY / ID+SECRET")
+    logger.info("Жанры: iTunes Search API (без ключа)")
 
 
 def upsert_signal(
@@ -567,10 +720,16 @@ def upsert_signal(
 
     zone = normalize_zone(zone_name)
     info = resolve_genre(artist, title, album, genre)
+    track_key = ai.cache_key(artist, title, album)
+
+    if info.genre == "unknown":
+        cached_genre = genre_cache_get(track_key)
+        if cached_genre:
+            info = cached_genre
+
     acoustics = infer_acoustics(artist, title, album, genre=info.genre)
     persona = persona_for(artist, title, album, acoustics, info.genre, info.label)
 
-    track_key = ai.cache_key(artist, title, album)
     cached = ai_cache_get(track_key) if ai.available() else None
     ai_model = ""
     if cached:
@@ -628,13 +787,16 @@ def upsert_signal(
     if cover_bytes:
         store_cover(device_id, cover_bytes)
 
-    if ai.available() and not cached:
+    needs_genre = info.genre == "unknown"
+    needs_ai = ai.available() and not cached
+    if (needs_genre or needs_ai) and _claim_enrichment(track_key):
         try:
-            AI_QUEUE.put_nowait(
-                (device_id, artist, title, album, info.label, track_key)
+            ENRICH_QUEUE.put_nowait(
+                (device_id, artist, title, album, info.genre, track_key)
             )
         except queue.Full:
-            logger.debug("GigaChat: очередь переполнена, пропускаем %s", title)
+            _release_enrichment(track_key)
+            logger.debug("Обогащение: очередь переполнена, пропускаем %s", title)
     return True
 
 
@@ -660,6 +822,7 @@ def row_genre(row: sqlite3.Row) -> GenreInfo:
 
 def build_state(device_id: str) -> dict:
     ensure_demo_signals()
+    ensure_demo_capsule()
     now = time.time()
     cutoff = now - 90 * 60
 
@@ -1525,9 +1688,10 @@ class EchoServer(ThreadingHTTPServer):
 def main() -> None:
     init_db()
     ensure_demo_signals()
+    ensure_demo_capsule()
     start_udp_broadcast()
     start_pc_bridge()
-    start_ai_worker()
+    start_enrichment()
     local_ip = get_local_ip()
     server = EchoServer(("0.0.0.0", PORT), EchoHandler)
     logger.info("=" * 62)

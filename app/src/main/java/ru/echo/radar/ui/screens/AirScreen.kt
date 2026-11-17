@@ -38,6 +38,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ru.echo.radar.data.repository.EchoRepository
+import ru.echo.radar.domain.model.EchoConnection
 import ru.echo.radar.domain.model.EchoSignal
 import ru.echo.radar.domain.model.EchoZone
 import ru.echo.radar.domain.model.SavedTrack
@@ -52,7 +53,6 @@ import ru.echo.radar.ui.components.EchoSignalRow
 import ru.echo.radar.ui.components.EchoSignalSheet
 import ru.echo.radar.ui.components.EchoStatusLine
 import ru.echo.radar.ui.components.ResonanceBeam
-import ru.echo.radar.ui.components.pluralRu
 import ru.echo.radar.ui.theme.EchoColors
 
 private const val RESONANCE_THRESHOLD = 85
@@ -72,15 +72,17 @@ fun AirScreen(repository: EchoRepository, onOpenSettings: () -> Unit) {
 
     val topResonance = snapshot.signals.maxOfOrNull { it.compatibility } ?: 0
 
-    val beamTarget = remember(snapshot.signals, track.isKnown) {
-        val candidates = snapshot.signals.filter {
-            !it.isGhost && it.compatibility >= RESONANCE_THRESHOLD
-        }
+    val beamTargets = remember(snapshot.signals, track.isKnown) {
+        val candidates = snapshot.signals
+            .filter { !it.isGhost && it.compatibility >= RESONANCE_THRESHOLD }
+            .sortedByDescending { it.compatibility }
         if (track.isKnown) {
-            candidates.maxByOrNull { it.compatibility }
+            candidates.take(3)
         } else {
-            candidates.firstOrNull { it.id == DEMO_MATCH_ID }
-                ?: candidates.maxByOrNull { it.compatibility }
+            val demo = candidates.firstOrNull { it.id == DEMO_MATCH_ID }
+            (listOfNotNull(demo) + candidates.filter { it.id != DEMO_MATCH_ID })
+                .distinctBy { it.id }
+                .take(3)
         }
     }
 
@@ -106,15 +108,17 @@ fun AirScreen(repository: EchoRepository, onOpenSettings: () -> Unit) {
             EchoMetric(
                 value = snapshot.signals.size.toString(),
                 caption = if (topResonance > 0) {
-                    "${snapshot.signals.size} ${pluralRu(snapshot.signals.size, "голос", "голоса", "голосов")} рядом · резонанс до $topResonance%"
+                    "рядом · резонанс до $topResonance%"
                 } else {
                     "сонар слушает тишину"
                 },
             )
-            EchoStatusLine(
-                connection = snapshot.connection,
-                totalObjects = snapshot.totalObjects,
-            )
+            if (snapshot.connection != EchoConnection.Online) {
+                EchoStatusLine(
+                    connection = snapshot.connection,
+                    totalObjects = snapshot.totalObjects,
+                )
+            }
             Spacer(modifier = Modifier.height(10.dp))
         }
 
@@ -144,15 +148,14 @@ fun AirScreen(repository: EchoRepository, onOpenSettings: () -> Unit) {
                 syncedTargets = snapshot.syncedTargets,
                 myColorHex = snapshot.myEcho.colorHex,
                 isDawn = snapshot.isDawn,
-                zoneCount = snapshot.zones.size,
                 onSignalClick = { selectedSignal = it },
                 zoom = zoom,
                 onZoom = { factor -> zoom = (zoom * factor).coerceIn(1f, 2.5f) },
-                beam = beamTarget?.let { signal ->
+                beams = beamTargets.mapIndexed { index, signal ->
                     ResonanceBeam(
                         angleDegrees = signal.angleDegrees,
                         distanceRatio = signal.distanceRatio,
-                        timeMillis = { stringClock },
+                        timeMillis = { stringClock + index * 1730L },
                     )
                 },
             )

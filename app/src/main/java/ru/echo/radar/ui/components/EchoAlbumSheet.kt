@@ -132,22 +132,20 @@ fun EchoAlbumSheet(
                 modifier = Modifier.horizontalScroll(rememberScrollState()),
             ) {
                 EchoChip(source.ifBlank { "Плеер Android" })
-                Spacer(modifier = Modifier.width(6.dp))
-                EchoChip(zoneName)
-                if (mood.isNotBlank()) {
-                    Spacer(modifier = Modifier.width(6.dp))
-                    EchoChip(mood, EchoColors.SkyBlue)
+                val genreChip = when {
+                    mood.isNotBlank() && mood != "жанр не указан" -> mood
+                    track.genre.isNotBlank() && track.genre != "жанр не указан" -> track.genre
+                    else -> ""
                 }
-            }
-
-            if (track.genre.isNotBlank()) {
-                Spacer(modifier = Modifier.height(10.dp))
-                EchoChip(track.genre)
+                if (genreChip.isNotBlank()) {
+                    Spacer(modifier = Modifier.width(6.dp))
+                    EchoChip(genreChip, EchoColors.SkyBlue)
+                }
             }
 
             if (persona.isNotBlank()) {
                 Spacer(modifier = Modifier.height(18.dp))
-                EchoSheetTitle("Архетип вечера")
+                EchoSheetTitle("Образ трека")
                 Spacer(modifier = Modifier.height(6.dp))
                 Text(
                     text = persona,

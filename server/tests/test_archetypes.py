@@ -6,7 +6,7 @@ import unittest
 
 from server.archetypes import archetype_for, pick_motif
 from server.genres import genre_label, resolve_genre
-from server.resonance import infer_acoustics, resonance
+from server.resonance import Acoustics, infer_acoustics, resonance
 
 
 def build(artist: str, title: str, album: str = "", source_genre: str = ""):
@@ -102,6 +102,15 @@ class ArchetypeTest(unittest.TestCase):
 
 
 class ResonanceWithGenreTest(unittest.TestCase):
+    def test_unknown_genres_do_not_leak_into_story(self) -> None:
+        first = Acoustics(bpm=110, camelot="8A", genre="unknown", energy=0.5, valence=0.5,
+                          artist="A", title="One", album="X")
+        second = Acoustics(bpm=112, camelot="8A", genre="unknown", energy=0.5, valence=0.5,
+                           artist="B", title="Two", album="Y")
+        percent, story = resonance(first, second)
+        self.assertNotIn("не указан", story)
+        self.assertGreaterEqual(percent, 58)
+
     def test_same_genre_from_catalog_connects(self) -> None:
         first_info, _ = build("Danheim", "Drums of Drakkar", "Vikings")
         second_info, _ = build("Wardruna", "Helvegen", "Runaljod")

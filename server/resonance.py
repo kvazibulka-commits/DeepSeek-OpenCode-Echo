@@ -466,9 +466,15 @@ def resonance(mine: Acoustics, other: Acoustics) -> tuple[int, str]:
             parts.append(f"Один альбом: {mine.album}.")
         elif title >= 0.9:
             parts.append(f"Похожее название: «{mine.title}».")
-        if genre >= 0.9:
+        known_genres = (
+            bool(mine.genre)
+            and bool(other.genre)
+            and mine.genre != "unknown"
+            and other.genre != "unknown"
+        )
+        if known_genres and genre >= 0.9:
             parts.append(f"Один жанр: {genre_label(mine.genre)}.")
-        elif genre >= 0.5 and mine.genre and other.genre:
+        elif known_genres and genre >= 0.5:
             parts.append(
                 f"Соседние жанры: {genre_label(mine.genre)} и {genre_label(other.genre)}."
             )
