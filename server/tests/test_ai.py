@@ -74,5 +74,40 @@ class CacheKeyTest(unittest.TestCase):
         )
 
 
+class AuthKeyTest(unittest.TestCase):
+    def test_auth_key_alone_is_enough(self) -> None:
+        env = {"ECHO_GIGACHAT_AUTH_KEY": "ZmFrZTpzZWNyZXQ="}
+        with patch.dict(os.environ, env, clear=True):
+            self.assertTrue(ai.available())
+            self.assertEqual("ZmFrZTpzZWNyZXQ=", ai.auth_key())
+
+    def test_client_secret_pair_still_works(self) -> None:
+        env = {
+            "ECHO_GIGACHAT_CLIENT_ID": "id",
+            "ECHO_GIGACHAT_CLIENT_SECRET": "secret",
+        }
+        with patch.dict(os.environ, env, clear=True):
+            self.assertTrue(ai.available())
+            self.assertEqual("", ai.auth_key())
+
+
+class JunkFilterTest(unittest.TestCase):
+    def test_extension_pages_are_junk(self) -> None:
+        from server.echo_server import is_junk_track
+
+        self.assertTrue(
+            is_junk_track("", "chrome-extension://abc/offscreen.html")
+        )
+        self.assertTrue(is_junk_track("", "about:blank"))
+        self.assertTrue(is_junk_track("", "https://example.com/stream"))
+
+    def test_normal_tracks_pass(self) -> None:
+        from server.echo_server import is_junk_track
+
+        self.assertFalse(is_junk_track("Munknörr", "Vanir"))
+        self.assertFalse(is_junk_track("Молчат Дома", "Судно"))
+        self.assertFalse(is_junk_track("Ray Wylie Hubbard", "Choctaw Bingo"))
+
+
 if __name__ == "__main__":
     unittest.main()

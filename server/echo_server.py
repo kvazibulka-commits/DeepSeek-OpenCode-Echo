@@ -182,10 +182,14 @@ def is_junk_track(artist: str, title: str) -> bool:
     markers = (
         "прямой эфир", "прямая трансляция", "голосовое сообщение",
         "видеосообщение", "livestream", "mash", "топор",
+        "chrome-extension://", "moz-extension://", "extension://",
+        "about:blank", "offscreen.html", "sandbox.html",
     )
     if any(marker in probe for marker in markers):
         return True
-    if any(ext in probe for ext in (".mp4", ".mkv", ".webm", ".mov", ".avi")):
+    if "://" in probe:
+        return True
+    if any(ext in probe for ext in (".mp4", ".mkv", ".webm", ".mov", ".avi", ".html")):
         return True
     if title.strip().isdigit() and len(title.strip()) >= 5:
         return True

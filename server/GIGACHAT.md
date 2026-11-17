@@ -42,37 +42,37 @@ GigaChat придумывает архетип трека вместо движ�
 ### Шаг 3. Ключи
 
 В карточке проекта нажмите **«Получить ключи»** / «Авторизационные данные».
-Вам выдадут пару:
+Вам выдадут:
 
 - **Client ID** — длинная строка;
-- **Client Secret** — ещё одна длинная строка.
+- **Client Secret** — ещё одна длинная строка;
+- **Authorization Key** — готовая base64-строка `ClientID:ClientSecret`.
 
-Важно: это **не** логин и пароль Сбер ID. Секрет показывают один раз —
-сохраните его. Если потеряли, выпустите новые ключи.
+Проще всего использовать именно **Authorization Key**: одна строка вместо двух.
+Секрет показывают один раз — сохраните его. Если потеряли, выпустите новые ключи.
 
 ### Шаг 4. Передать ключи серверу
 
 Ключи живут только в переменных окружения, в git не попадают.
 
-Временный запуск (PowerShell, перед `run-server.bat`):
+Самый простой путь — Authorization Key:
 
 ```powershell
-$env:ECHO_GIGACHAT_CLIENT_ID="ваш_client_id"
-$env:ECHO_GIGACHAT_CLIENT_SECRET="ваш_client_secret"
-.\run-server.bat
+setx ECHO_GIGACHAT_AUTH_KEY "ваш_authorization_key"
 ```
 
-Постоянно (один раз, потом перезагрузка консоли):
+Или пара клиентских ключей:
 
 ```powershell
 setx ECHO_GIGACHAT_CLIENT_ID "ваш_client_id"
 setx ECHO_GIGACHAT_CLIENT_SECRET "ваш_client_secret"
 ```
 
-Проверить, что переменные видны:
+После `setx` закройте и откройте консоль заново — переменные подхватятся.
+Проверить, что переменная видна:
 
 ```powershell
-echo $env:ECHO_GIGACHAT_CLIENT_ID
+echo $env:ECHO_GIGACHAT_AUTH_KEY
 ```
 
 ### Шаг 5. Сертификаты (если будет ошибка TLS)
@@ -119,8 +119,9 @@ GigaChat: Munknörr — Vanir → Дозорный фьорда
 
 | Переменная | По умолчанию | Смысл |
 |---|---|---|
-| `ECHO_GIGACHAT_CLIENT_ID` | — | обязательна |
-| `ECHO_GIGACHAT_CLIENT_SECRET` | — | обязательна |
+| `ECHO_GIGACHAT_AUTH_KEY` | — | готовый Authorization Key (base64) |
+| `ECHO_GIGACHAT_CLIENT_ID` | — | альтернатива: Client ID |
+| `ECHO_GIGACHAT_CLIENT_SECRET` | — | альтернатива: Client Secret |
 | `ECHO_GIGACHAT_SCOPE` | `GIGACHAT_API_PERS` | физлицо; для юрлица `GIGACHAT_API_B2B` |
 | `ECHO_GIGACHAT_MODEL` | `GigaChat` | `GigaChat`, `GigaChat-Pro`, `GigaChat-Max` |
 | `ECHO_GIGACHAT_CA` | — | путь к PEM корневого сертификата |
@@ -168,13 +169,13 @@ python -c "import sqlite3; c=sqlite3.connect('server/echo_memory.db'); c.execute
 
 ## 8. Что прислать мне
 
-Лучше впишите ключи сами командами из шага 4 — тогда секрет не уйдёт в чат.
-Если удобнее, пришлите две строки:
+На этой машине ключ уже сохранён в переменной `ECHO_GIGACHAT_AUTH_KEY`,
+сервер перезапущен с ним, и первый живой архетип получен.
 
-```
-Client ID: ...
-Client Secret: ...
+Если ключ перевыпустят — снова выполните:
+
+```powershell
+setx ECHO_GIGACHAT_AUTH_KEY "новый_authorization_key"
 ```
 
-Я пропишу их на этой машине через `setx`, перезапущу сервер и покажу первый
-сгенерированный архетип в логе.
+и перезапустите сервер. Секрет никуда в репозиторий не пишется.

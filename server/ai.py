@@ -2,6 +2,10 @@
 
 Работает только если заданы ключи:
 
+    ECHO_GIGACHAT_AUTH_KEY=<Authorization Key из кабинета>
+
+или пара:
+
     ECHO_GIGACHAT_CLIENT_ID
     ECHO_GIGACHAT_CLIENT_SECRET
 
@@ -49,7 +53,9 @@ MAX_OBSERVATION_LEN = 140
 
 SYSTEM_PROMPT = """Ты — голос ночного музыкального сонара «ЭХО». Ты даёшь треку архетип — короткое имя образа.
 Правила:
+- сначала определи мир трека по жанру и названию: север, ночной город, море, космос, огонь, дорога, храм, дом;
 - архетип: 2–4 слова, роль в именительном падеже и образ в родительном: «Дозорный фьорда», «Ловец ночных фонарей», «Певец сводов собора»;
+- образ обязан быть из мира трека: для северного фолка — фьорд, драккар, руны, ветер; не подставляй храм или неон, если трек о севере;
 - опирайся на смысл названия, альбома, артиста и жанра; не придумывай жанр, если он не указан;
 - без кавычек, эмодзи, цифр, имён артистов и названий треков;
 - наблюдение: одно предложение до 90 символов, атмосферное, без «этот трек» и без оценок;
@@ -61,6 +67,9 @@ SYSTEM_PROMPT = """Ты — голос ночного музыкального �
 
 Трек: Судно / Молчат Дома / Этажи, жанр пост-панк
 {"archetype": "Ловец ночных фонарей", "observation": "Знает, как звучит пустой двор после полуночи."}
+
+Трек: Nightcall / Kavinsky / OutRun, жанр синти-вейв
+{"archetype": "Штурман ночного неона", "observation": "Держит курс по огням, которых нет на карте."}
 """
 
 USER_TEMPLATE = """Артист: {artist}
@@ -85,6 +94,11 @@ def client_secret() -> str:
     return _env("ECHO_GIGACHAT_CLIENT_SECRET")
 
 
+def auth_key() -> str:
+    """Готовый Authorization Key из кабинета (base64 от client_id:client_secret)."""
+    return _env("ECHO_GIGACHAT_AUTH_KEY").replace("Basic ", "").strip()
+
+
 def scope() -> str:
     return _env("ECHO_GIGACHAT_SCOPE", DEFAULT_SCOPE) or DEFAULT_SCOPE
 
@@ -94,7 +108,7 @@ def model_name() -> str:
 
 
 def available() -> bool:
-    return bool(client_id() and client_secret())
+    return bool(auth_key() or (client_id() and client_secret()))
 
 
 def cache_key(artist: str, title: str, album: str = "") -> str:
@@ -129,8 +143,9 @@ def _access_token(force: bool = False) -> str:
             return cached
 
         pair = f"{client_id()}:{client_secret()}".encode("utf-8")
+        basic = auth_key() or base64.b64encode(pair).decode("ascii")
         headers = {
-            "Authorization": "Basic " + base64.b64encode(pair).decode("ascii"),
+            "Authorization": "Basic " + basic,
             "RqUID": str(uuid.uuid4()),
             "Content-Type": "application/x-www-form-urlencoded",
             "Accept": "application/json",
@@ -208,7 +223,7 @@ def generate(
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": user_prompt},
         ],
-        "temperature": 0.8,
+        "temperature": 0.6,
         "top_p": 0.9,
         "max_tokens": 160,
         "stream": False,
