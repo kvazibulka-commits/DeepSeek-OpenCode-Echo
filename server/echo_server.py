@@ -1088,15 +1088,47 @@ def start_pc_bridge() -> None:
             except Exception:
                 return None
 
+        async def pick_session(manager):
+            """Выбирает музыкальную сессию, а не служебную страницу расширения."""
+            ordered = []
+            current = manager.get_current_session()
+            if current:
+                ordered.append(current)
+            try:
+                for item in manager.get_sessions():
+                    if all(
+                        item.source_app_user_model_id != known.source_app_user_model_id
+                        for known in ordered
+                    ):
+                        ordered.append(item)
+            except Exception:
+                pass
+
+            for session in ordered:
+                try:
+                    props = await session.try_get_media_properties_async()
+                except Exception:
+                    continue
+                if not props:
+                    continue
+                title = (props.title or "").strip()
+                artist = (props.artist or "").strip()
+                app_id = (session.source_app_user_model_id or "").lower()
+                if not title or not artist:
+                    continue
+                if "extension" in app_id or "://" in f"{artist} {title}":
+                    continue
+                if is_junk_track(artist, title):
+                    continue
+                return session, props
+            return None, None
+
         async def check() -> None:
             nonlocal last_track, last_update, last_logged
             try:
                 manager = await GlobalSystemMediaTransportControlsSessionManager.request_async()
-                session = manager.get_current_session()
-                if not session:
-                    return
-                props = await session.try_get_media_properties_async()
-                if not props:
+                session, props = await pick_session(manager)
+                if not session or not props:
                     return
 
                 artist = (props.artist or "").strip()
